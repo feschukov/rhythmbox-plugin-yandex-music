@@ -23,19 +23,21 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         super(YandexMusic, self).__init__()
 
     def do_activate(self):
+        print('Yandex.Music plugin activating')
         shell = self.object
         db = shell.props.db
         self.entry_type = YMEntryType()
         db.register_entry_type(self.entry_type)
         self.client = Client.from_credentials('login@yandex.ru', 'password')
-        iconfile = Gio.File.new_for_path(self.plugin_info.get_data_dir()+"/yandex-music.svg")
-        self.source = GObject.new(YMSource, shell=shell, name=_("Yandex")+"."+_("Music"), entry_type=self.entry_type, plugin=self, icon=Gio.FileIcon.new(iconfile))
+        iconfile = Gio.File.new_for_path(self.plugin_info.get_data_dir()+'/yandex-music.svg')
+        self.source = GObject.new(YMSource, shell=shell, name=_('Yandex')+'.'+_('Music'), entry_type=self.entry_type, plugin=self, icon=Gio.FileIcon.new(iconfile))
         self.source.setup(db, self.client)
         shell.register_entry_type_for_source(self.source, self.entry_type)
-        group = RB.DisplayPageGroup.get_by_id("library")
+        group = RB.DisplayPageGroup.get_by_id('library')
         shell.append_display_page(self.source, group)
 
     def do_deactivate(self):
+        print('Yandex.Music plugin deactivating')
         self.source.delete_thyself()
         self.source = None
         self.entry_type = None
@@ -58,10 +60,9 @@ class YMSource(RB.BrowserSource):
     def do_selected(self):
         if not self.initialised :
             self.initialised = True
-            audios = self.client.users_likes_tracks()
-            i = 1
-            for audio in audios:
-                track = audio.fetch_track()
+            tracks = self.client.users_likes_tracks().fetch_tracks()
+            for track in tracks:
+                if not track.available: continue
                 loadinfo = track.get_download_info(get_direct_links=True)
                 entry = RB.RhythmDBEntry.new(self.db, self.entry_type, loadinfo[0].direct_link)
                 self.db.commit()
@@ -72,8 +73,5 @@ class YMSource(RB.BrowserSource):
                     self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, track.albums[0].title)
                     #self.db.entry_set(entry, RB.RhythmDBPropType.IMAGE, track.albums[0].cover_uri)
                 self.db.commit()
-                i=i+1
-                if i>5 :
-                    break
 
 GObject.type_register(YMSource)
