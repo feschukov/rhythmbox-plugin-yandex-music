@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from gi.repository import GObject, RB, Peas, Gio
+from gi.repository import GObject, RB, Peas, Gio, GLib, Gdk
 from yandex_music import Client
 
 class YandexMusic(GObject.Object, Peas.Activatable):
@@ -28,10 +28,9 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         db = shell.props.db
         self.entry_type = YMEntryType()
         db.register_entry_type(self.entry_type)
-        self.client = Client.from_credentials('login@yandex.ru', 'password')
         iconfile = Gio.File.new_for_path(self.plugin_info.get_data_dir()+'/yandex-music.svg')
         self.source = GObject.new(YMSource, shell=shell, name=_('Yandex')+'.'+_('Music'), entry_type=self.entry_type, plugin=self, icon=Gio.FileIcon.new(iconfile))
-        self.source.setup(db, self.client)
+        self.source.setup(db)
         shell.register_entry_type_for_source(self.source, self.entry_type)
         group = RB.DisplayPageGroup.get_by_id('library')
         shell.append_display_page(self.source, group)
@@ -51,27 +50,46 @@ class YMSource(RB.BrowserSource):
     def __init__(self):
         RB.BrowserSource.__init__(self)
 
-    def setup(self, db, client):
+    def setup(self, db):
         self.initialised = False
         self.db = db
         self.entry_type = self.props.entry_type
-        self.client = client
+        self.client = None
+        self.iterator = 1
+        self.listcount = 0
 
     def do_selected(self):
-        if not self.initialised :
+        if not self.initialised:
             self.initialised = True
-            tracks = self.client.users_likes_tracks().fetch_tracks()
-            for track in tracks:
-                if not track.available: continue
-                loadinfo = track.get_download_info(get_direct_links=True)
-                entry = RB.RhythmDBEntry.new(self.db, self.entry_type, loadinfo[0].direct_link)
+            Gdk.threads_add_idle(GLib.PRIORITY_LOW, self.users_likes_tracks)
+
+    def users_likes_tracks(self):
+        self.client = Client.from_credentials('login', 'password')
+        trackslist = self.client.users_likes_tracks()
+        tracks = trackslist.fetch_tracks()
+        #downinfo = self.client.tracks_download_info(track_id=trackslist.tracks_ids, get_direct_links=True)
+        #print(downinfo)
+        self.listcount = len(tracks)
+        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entry, tracks)
+        return False
+
+    def add_entry(self, tracks):
+        track = tracks[self.iterator]
+        if track.available:
+            loadinfo = track.get_download_info(get_direct_links=True)
+            entry = RB.RhythmDBEntry.new(self.db, self.entry_type, loadinfo[0].direct_link) #str(track.id)+':'+str(track.albums[0].id))
+            self.db.commit()
+            if entry is not None:
+                self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, track.title)
+                self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, track.duration_ms/1000)
+                self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, track.artists[0].name)
+                self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, track.albums[0].title)
+                #self.db.entry_set(entry, RB.RhythmDBPropType.IMAGE, track.albums[0].cover_uri)
                 self.db.commit()
-                if entry is not None:
-                    self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, track.title)
-                    self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, track.duration_ms/1000)
-                    self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, track.artists[0].name)
-                    self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, track.albums[0].title)
-                    #self.db.entry_set(entry, RB.RhythmDBPropType.IMAGE, track.albums[0].cover_uri)
-                self.db.commit()
+        self.iterator += 1
+        if self.iterator > self.listcount:
+            return False
+        else:
+            return True
 
 GObject.type_register(YMSource)
