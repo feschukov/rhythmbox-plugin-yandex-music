@@ -47,6 +47,12 @@ class YMEntryType(RB.RhythmDBEntryType):
     def __init__(self):
         RB.RhythmDBEntryType.__init__(self, name='ym-entry-type', save_to_disk=False)
 
+    def do_get_playback_uri(self, entry):
+        track_id = entry.get_string(RB.RhythmDBPropType.LOCATION)
+        global YMClient
+        downinfo = YMClient.tracks_download_info(track_id=track_id, get_direct_links=True)
+        return downinfo[1].direct_link
+
 class YMSource(RB.BrowserSource):
     def __init__(self):
         RB.BrowserSource.__init__(self)
@@ -55,7 +61,6 @@ class YMSource(RB.BrowserSource):
         self.initialised = False
         self.db = db
         self.entry_type = self.props.entry_type
-        self.client = None
 
     def do_selected(self):
         if not self.initialised:
@@ -63,8 +68,9 @@ class YMSource(RB.BrowserSource):
             Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.users_likes_tracks)
 
     def users_likes_tracks(self):
-        self.client = Client.from_credentials('login', 'password')
-        trackslist = self.client.users_likes_tracks()
+        global YMClient
+        YMClient = Client.from_credentials('login', 'password')
+        trackslist = YMClient.users_likes_tracks()
         tracks = trackslist.fetch_tracks()
         self.iterator = 1
         self.listcount = len(tracks)
@@ -74,15 +80,12 @@ class YMSource(RB.BrowserSource):
     def add_entry(self, tracks):
         track = tracks[self.iterator]
         if track.available:
-            loadinfo = track.get_download_info(get_direct_links=True)
             entry = RB.RhythmDBEntry.new(self.db, self.entry_type, str(track.id)+':'+str(track.albums[0].id))
             if entry is not None:
-                self.db.entry_set(entry, RB.RhythmDBPropType.LOCATION, loadinfo[1].direct_link)
                 self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, track.title)
                 self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, track.duration_ms/1000)
                 self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, track.artists[0].name)
                 self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, track.albums[0].title)
-                self.db.entry_set(entry, RB.RhythmDBPropType.BITRATE, loadinfo[1].bitrate_in_kbps)
                 self.db.commit()
         self.iterator += 1
         if self.iterator >= self.listcount:
@@ -90,4 +93,5 @@ class YMSource(RB.BrowserSource):
         else:
             return True
 
+YMClient = Client()
 GObject.type_register(YMSource)
