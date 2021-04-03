@@ -26,14 +26,15 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         print('Yandex.Music plugin activating')
         shell = self.object
         db = shell.props.db
+        page_group = RB.DisplayPageGroup(shell=shell, id='yandex-music-playlist', name=_('Яндекс')+'.'+_('Music'), category=RB.DisplayPageGroupCategory.TRANSIENT)
+        shell.append_display_page(page_group, None)
         self.entry_type = YMEntryType()
         db.register_entry_type(self.entry_type)
         iconfile = Gio.File.new_for_path(self.plugin_info.get_data_dir()+'/yandex-music.svg')
-        self.source = GObject.new(YMSource, shell=shell, name=_('Yandex')+'.'+_('Music'), entry_type=self.entry_type, plugin=self, icon=Gio.FileIcon.new(iconfile))
+        self.source = GObject.new(YMSource, shell=shell, name=_('Мне нравится'), entry_type=self.entry_type, plugin=self, icon=Gio.FileIcon.new(iconfile))
         self.source.setup(db)
         shell.register_entry_type_for_source(self.source, self.entry_type)
-        group = RB.DisplayPageGroup.get_by_id('library')
-        shell.append_display_page(self.source, group)
+        shell.append_display_page(self.source, page_group)
 
     def do_deactivate(self):
         print('Yandex.Music plugin deactivating')
@@ -55,20 +56,17 @@ class YMSource(RB.BrowserSource):
         self.db = db
         self.entry_type = self.props.entry_type
         self.client = None
-        self.iterator = 1
-        self.listcount = 0
 
     def do_selected(self):
         if not self.initialised:
             self.initialised = True
-            Gdk.threads_add_idle(GLib.PRIORITY_LOW, self.users_likes_tracks)
+            Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.users_likes_tracks)
 
     def users_likes_tracks(self):
         self.client = Client.from_credentials('login', 'password')
         trackslist = self.client.users_likes_tracks()
         tracks = trackslist.fetch_tracks()
-        #downinfo = self.client.tracks_download_info(track_id=trackslist.tracks_ids, get_direct_links=True)
-        #print(downinfo)
+        self.iterator = 1
         self.listcount = len(tracks)
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entry, tracks)
         return False
@@ -77,17 +75,17 @@ class YMSource(RB.BrowserSource):
         track = tracks[self.iterator]
         if track.available:
             loadinfo = track.get_download_info(get_direct_links=True)
-            entry = RB.RhythmDBEntry.new(self.db, self.entry_type, loadinfo[0].direct_link) #str(track.id)+':'+str(track.albums[0].id))
-            self.db.commit()
+            entry = RB.RhythmDBEntry.new(self.db, self.entry_type, str(track.id)+':'+str(track.albums[0].id))
             if entry is not None:
+                self.db.entry_set(entry, RB.RhythmDBPropType.LOCATION, loadinfo[1].direct_link)
                 self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, track.title)
                 self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, track.duration_ms/1000)
                 self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, track.artists[0].name)
                 self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, track.albums[0].title)
-                #self.db.entry_set(entry, RB.RhythmDBPropType.IMAGE, track.albums[0].cover_uri)
+                self.db.entry_set(entry, RB.RhythmDBPropType.BITRATE, loadinfo[1].bitrate_in_kbps)
                 self.db.commit()
         self.iterator += 1
-        if self.iterator > self.listcount:
+        if self.iterator >= self.listcount:
             return False
         else:
             return True
