@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema path="/org/gnome/rhythmbox/plugins/yandex-music/" id="org.gnome.rhythmbox.plugins.yandex-music">
+    <key type="s" name="token">
+      <default>""</default>
+      <summary>TOKEN</summary>
+      <description>System variable TOKEN</description>
+    </key>
+  </schema>
+</schemalist>

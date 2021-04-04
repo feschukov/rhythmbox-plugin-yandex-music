@@ -24,6 +24,9 @@ class YandexMusic(GObject.Object, Peas.Activatable):
 
     def do_activate(self):
         print('Yandex.Music plugin activating')
+        schema_source = Gio.SettingsSchemaSource.new_from_directory(self.plugin_info.get_data_dir(), Gio.SettingsSchemaSource.get_default(), False,)
+        schema = schema_source.lookup('org.gnome.rhythmbox.plugins.yandex-music', False)
+        self.settings = Gio.Settings.new_full(schema, None, None)
         shell = self.object
         db = shell.props.db
         page_group = RB.DisplayPageGroup(shell=shell, id='yandex-music-playlist', name=_('Яндекс')+'.'+_('Music'), category=RB.DisplayPageGroupCategory.TRANSIENT)
@@ -32,7 +35,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         db.register_entry_type(self.entry_type)
         iconfile = Gio.File.new_for_path(self.plugin_info.get_data_dir()+'/yandex-music.svg')
         self.source = GObject.new(YMSource, shell=shell, name=_('Мне нравится'), entry_type=self.entry_type, plugin=self, icon=Gio.FileIcon.new(iconfile))
-        self.source.setup(db)
+        self.source.setup(db, self.settings)
         shell.register_entry_type_for_source(self.source, self.entry_type)
         shell.append_display_page(self.source, page_group)
 
@@ -42,6 +45,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         self.source = None
         self.entry_type = None
         self.client = None
+        self.settings = None
 
 class YMEntryType(RB.RhythmDBEntryType):
     def __init__(self):
@@ -57,19 +61,28 @@ class YMSource(RB.BrowserSource):
     def __init__(self):
         RB.BrowserSource.__init__(self)
 
-    def setup(self, db):
+    def setup(self, db, settings):
         self.initialised = False
         self.db = db
         self.entry_type = self.props.entry_type
+        self.settings = settings
 
     def do_selected(self):
         if not self.initialised:
             self.initialised = True
+            self.login_yandex()
             Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.users_likes_tracks)
+
+    def login_yandex(self):
+        global YMClient
+        token = self.settings.get_string('token')
+        if token == '':
+            token = Client.generate_token_by_username_and_password('login', 'password')
+            self.settings.set_string('token', token)
+        YMClient = Client.from_token(token)
 
     def users_likes_tracks(self):
         global YMClient
-        YMClient = Client.from_credentials('login', 'password')
         trackslist = YMClient.users_likes_tracks()
         tracks = trackslist.fetch_tracks()
         self.iterator = 1
@@ -93,5 +106,4 @@ class YMSource(RB.BrowserSource):
         else:
             return True
 
-YMClient = Client()
 GObject.type_register(YMSource)
