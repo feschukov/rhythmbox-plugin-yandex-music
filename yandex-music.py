@@ -70,13 +70,14 @@ class YMSource(RB.BrowserSource):
     def do_selected(self):
         if not self.initialised:
             self.initialised = True
-            self.login_yandex()
-            Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.users_likes_tracks)
+            if self.login_yandex():
+                Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.users_likes_tracks)
 
     def login_yandex(self):
         global YMClient
         token = self.settings.get_string('token')
-        if token == '':
+        self.iterator = 0
+        while len(token) < 1 and self.iterator < 5:
             d = Gtk.Dialog(buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK))
             label_login = Gtk.Label(_('Login'))
             label_passwd = Gtk.Label(_('Password'))
@@ -91,15 +92,22 @@ class YMSource(RB.BrowserSource):
             login = input_login.get_text()
             password = input_passwd.get_text()
             d.destroy()
-            token = Client.generate_token_by_username_and_password(login, password)
-            self.settings.set_string('token', token)
-        YMClient = Client.from_token(token)
+            if len(login) > 0 and len(password) > 0:
+                token = Client.generate_token_by_username_and_password(login, password)
+                if len(token) > 0:
+                    self.settings.set_string('token', token)
+            self.iterator += 1
+        if len(token) < 1:
+            return False
+        else:
+            YMClient = Client.from_token(token)
+            return True
 
     def users_likes_tracks(self):
         global YMClient
         trackslist = YMClient.users_likes_tracks()
         tracks = trackslist.fetch_tracks()
-        self.iterator = 1
+        self.iterator = 0
         self.listcount = len(tracks)
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entry, tracks)
         return False
