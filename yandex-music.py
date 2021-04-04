@@ -119,7 +119,13 @@ class YMSource(RB.BrowserSource):
             if entry is not None:
                 self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, track.title)
                 self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, track.duration_ms/1000)
-                self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, track.artists[0].name)
+                artists = ''
+                for artist in track.artists:
+                    if len(artists) > 1:
+                        artists += ', '+artist.name
+                    else:
+                        artists = artist.name
+                self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, artists)
                 self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, track.albums[0].title)
                 self.db.commit()
         self.iterator += 1
