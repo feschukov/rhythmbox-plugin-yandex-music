@@ -48,8 +48,8 @@ class YMEntryType(RB.RhythmDBEntryType):
         RB.RhythmDBEntryType.__init__(self, name='ym-entry-type', save_to_disk=False)
 
     def do_get_playback_uri(self, entry):
-        track_id = entry.get_string(RB.RhythmDBPropType.LOCATION)
         global YMClient
+        track_id = entry.get_string(RB.RhythmDBPropType.LOCATION)
         downinfo = YMClient.tracks_download_info(track_id=track_id, get_direct_links=True)
         return downinfo[1].direct_link
 
