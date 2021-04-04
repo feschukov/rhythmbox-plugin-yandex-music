@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from gi.repository import GObject, RB, Peas, Gio, GLib, Gdk
+from gi.repository import GObject, RB, Peas, Gio, GLib, Gdk, Gtk
 from yandex_music import Client
 
 class YandexMusic(GObject.Object, Peas.Activatable):
@@ -77,7 +77,21 @@ class YMSource(RB.BrowserSource):
         global YMClient
         token = self.settings.get_string('token')
         if token == '':
-            token = Client.generate_token_by_username_and_password('login', 'password')
+            d = Gtk.Dialog(buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK))
+            label_login = Gtk.Label(_('Login'))
+            label_passwd = Gtk.Label(_('Password'))
+            input_login = Gtk.Entry(width_chars=25,activates_default=True)
+            input_passwd = Gtk.Entry(width_chars=25,activates_default=True)
+            d.vbox.pack_start(label_login, expand=True, fill=True, padding=10)
+            d.vbox.pack_start(input_login, expand=False, fill=False, padding=10)
+            d.vbox.pack_start(label_passwd, expand=True, fill=True, padding=10)
+            d.vbox.pack_start(input_passwd, expand=False, fill=False, padding=10)
+            d.show_all()
+            d.run()
+            login = input_login.get_text()
+            password = input_passwd.get_text()
+            d.destroy()
+            token = Client.generate_token_by_username_and_password(login, password)
             self.settings.set_string('token', token)
         YMClient = Client.from_token(token)
 
