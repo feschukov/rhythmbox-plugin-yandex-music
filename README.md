@@ -8,9 +8,10 @@
 
 Затем скачать плагин и переместить его в папку с плагинами Rhythmbox.
 
-    $ git clone https://github.com/dobroweb/rhythmbox-plugin-yandex-music --recursive
-    $ mkdir ~/.local/share/rhythmbox/plugins/
-    $ mv rhythmbox-plugin-yandex-music ~/.local/share/rhythmbox/plugins/yandex-music
+    $ wget https://github.com/dobroweb/rhythmbox-plugin-yandex-music/archive/refs/tags/0.1-alpha.tar.gz
+    $ tar -zxvf rhythmbox-plugin-yandex-music*.tar.gz
+    $ mkdir -p ~/.local/share/rhythmbox/plugins/
+    $ mv rhythmbox-plugin-yandex-music* ~/.local/share/rhythmbox/plugins/yandex-music
 
 После чего активировать плагин в настройках Rhythmbox.
 
