@@ -8,4 +8,4 @@ Description=Unofficial Yandex.Music plugin
 Description[ru]=Неофициальный плагин Яндекс.Музыки
 Authors=Sergey Feschukov <snfesh@gmail.com>
 Copyright=Copyright © 2021 Sergey Feschukov
-Website=http://some.website/
+Website=https://github.com/dobroweb/rhythmbox-plugin-yandex-music
