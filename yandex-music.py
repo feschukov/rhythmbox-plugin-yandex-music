@@ -23,7 +23,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         self.source.setup(db, self.settings)
         shell.register_entry_type_for_source(self.source, self.entry_type)
         shell.append_display_page(self.source, self.page_group)
-        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.login_yandex)
+        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.load_dashboard)
 
     def do_deactivate(self):
         print('Yandex.Music plugin deactivating')
@@ -42,7 +42,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
             for result in dashboard.stations:
                 entry_type = YMEntryType()
                 source = GObject.new(YMDashboardSource, shell=shell, name=result.station.name, entry_type=entry_type, plugin=self)
-                source.setup(db, self.settings, result.station.name)
+                source.setup(db, self.settings, result.station.id.type+':'+result.station.id.tag)
                 shell.register_entry_type_for_source(source, entry_type)
                 shell.append_display_page(source, self.page_group)
         return False
@@ -75,7 +75,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
             return False
         else:
             YMClient = Client.from_token(token)
-            return False
+            return True
 
 class YMEntryType(RB.RhythmDBEntryType):
     def __init__(self):
@@ -109,8 +109,7 @@ class YMLikesSource(RB.BrowserSource):
 
     def users_likes_tracks(self):
         global YMClient
-        trackslist = YMClient.users_likes_tracks()
-        tracks = trackslist.fetch_tracks()
+        tracks = YMClient.users_likes_tracks().fetch_tracks()
         self.iterator = 0
         self.listcount = len(tracks)
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entry, tracks)
@@ -150,20 +149,18 @@ class YMDashboardSource(RB.BrowserSource):
         self.station = station
 
     def do_selected(self):
-        if not self.initialised:
-            self.initialised = True
-            Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.rotor_station_tracks)
+        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.rotor_station_tracks)
 
     def rotor_station_tracks(self):
         global YMClient
-        trackslist = YMClient.rotor_station_tracks(self.station)
+        tracks = YMClient.rotor_station_tracks(self.station).sequence
         self.iterator = 0
         self.listcount = len(tracks)
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entry, tracks)
         return False
 
     def add_entry(self, tracks):
-        track = tracks[self.iterator]
+        track = tracks[self.iterator].track
         if track.available:
             entry = RB.RhythmDBEntry.new(self.db, self.entry_type, str(track.id)+':'+str(track.albums[0].id))
             if entry is not None:
