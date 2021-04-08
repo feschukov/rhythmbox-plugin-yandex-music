@@ -147,13 +147,14 @@ class YMDashboardSource(RB.BrowserSource):
         self.entry_type = self.props.entry_type
         self.settings = settings
         self.station = station
+        self.last_track = None
 
     def do_selected(self):
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.rotor_station_tracks)
 
     def rotor_station_tracks(self):
         global YMClient
-        tracks = YMClient.rotor_station_tracks(self.station).sequence
+        tracks = YMClient.rotor_station_tracks(station=self.station, queue=self.last_track).sequence
         self.iterator = 0
         self.listcount = len(tracks)
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entry, tracks)
@@ -177,6 +178,7 @@ class YMDashboardSource(RB.BrowserSource):
                 self.db.commit()
         self.iterator += 1
         if self.iterator >= self.listcount:
+            self.last_track = str(track.id)+':'+str(track.albums[0].id)
             return False
         else:
             return True
