@@ -14,9 +14,9 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         self.settings = Gio.Settings.new_full(schema, None, None)
         shell = self.object
         db = shell.props.db
-        self.page_group = RB.DisplayPageGroup(shell=shell, id='yandex-music-playlist', name=_('Яндекс')+'.'+_('Music'), category=RB.DisplayPageGroupCategory.TRANSIENT)
+        self.page_group = RB.DisplayPageGroup(shell=shell, id='yandex-music-playlist', name=_('Яндекс.Музыка'), category=RB.DisplayPageGroupCategory.TRANSIENT)
         shell.append_display_page(self.page_group, None)
-        self.entry_type = YMEntryType()
+        self.entry_type = YMLikesEntry()
         db.register_entry_type(self.entry_type)
         iconfile = Gio.File.new_for_path(self.plugin_info.get_data_dir()+'/yandex-music.svg')
         self.source = GObject.new(YMLikesSource, shell=shell, name=_('Мне нравится'), entry_type=self.entry_type, plugin=self, icon=Gio.FileIcon.new(iconfile))
@@ -40,7 +40,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         if self.login_yandex():
             dashboard = YMClient.rotor_stations_dashboard()
             for result in dashboard.stations:
-                entry_type = YMEntryType()
+                entry_type = YMDashboardEntry(result.station.id.type+':'+result.station.id.tag)
                 source = GObject.new(YMDashboardSource, shell=shell, name=result.station.name, entry_type=entry_type, plugin=self)
                 source.setup(db, self.settings, result.station.id.type+':'+result.station.id.tag)
                 shell.register_entry_type_for_source(source, entry_type)
@@ -53,8 +53,8 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         self.iterator = 0
         while len(token) < 1 and self.iterator < 5:
             d = Gtk.Dialog(buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK))
-            label_login = Gtk.Label(_('Login'))
-            label_passwd = Gtk.Label(_('Password'))
+            label_login = Gtk.Label(_('Логин'))
+            label_passwd = Gtk.Label(_('Пароль'))
             input_login = Gtk.Entry(width_chars=25,activates_default=True)
             input_passwd = Gtk.Entry(width_chars=25,activates_default=True)
             d.vbox.pack_start(label_login, expand=True, fill=True, padding=10)
@@ -77,9 +77,9 @@ class YandexMusic(GObject.Object, Peas.Activatable):
             YMClient = Client.from_token(token)
             return True
 
-class YMEntryType(RB.RhythmDBEntryType):
+class YMLikesEntry(RB.RhythmDBEntryType):
     def __init__(self):
-        RB.RhythmDBEntryType.__init__(self, name='ym-entry-type', save_to_disk=False)
+        RB.RhythmDBEntryType.__init__(self, name='ym-likes-type', save_to_disk=False)
 
     def do_get_playback_uri(self, entry):
         global YMClient
@@ -136,6 +136,21 @@ class YMLikesSource(RB.BrowserSource):
             return False
         else:
             return True
+
+class YMDashboardEntry(RB.RhythmDBEntryType):
+    def __init__(self, station):
+        RB.RhythmDBEntryType.__init__(self, name='ym-dashboard-entry', save_to_disk=False)
+        self.station = station
+        self.last_track = None
+
+    def do_get_playback_uri(self, entry):
+        global YMClient
+        if self.last_track:
+            YMClient.rotor_station_feedback_track_finished(station=self.station, track_id=self.last_track, total_played_seconds=entry.get_ulong(RB.RhythmDBPropType.DURATION)*1000)
+        self.last_track = entry.get_string(RB.RhythmDBPropType.LOCATION)
+        downinfo = YMClient.tracks_download_info(track_id=self.last_track, get_direct_links=True)
+        YMClient.rotor_station_feedback_track_started(station=self.station, track_id=self.last_track)
+        return downinfo[1].direct_link
 
 class YMDashboardSource(RB.BrowserSource):
     def __init__(self):
