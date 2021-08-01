@@ -67,7 +67,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
             password = input_passwd.get_text()
             d.destroy()
             if len(login) > 0 and len(password) > 0:
-                token = Client.generate_token_by_username_and_password(login, password)
+                token = Client().generate_token_by_username_and_password(login, password)
                 if len(token) > 0:
                     self.settings.set_string('token', token)
             self.iterator += 1
