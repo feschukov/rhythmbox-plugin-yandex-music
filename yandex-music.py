@@ -74,7 +74,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         if len(token) < 1:
             return False
         else:
-            YMClient = Client.from_token(token)
+            YMClient = Client(token).init()
             return True
 
 class YMLikesEntry(RB.RhythmDBEntryType):
@@ -145,11 +145,11 @@ class YMDashboardEntry(RB.RhythmDBEntryType):
 
     def do_get_playback_uri(self, entry):
         global YMClient
-        if self.last_track:
-            YMClient.rotor_station_feedback_track_finished(station=self.station, track_id=self.last_track, total_played_seconds=entry.get_ulong(RB.RhythmDBPropType.DURATION)*1000)
+#        if self.last_track:
+#            YMClient.rotor_station_feedback_track_finished(station=self.station, track_id=self.last_track, total_played_seconds=entry.get_ulong(RB.RhythmDBPropType.DURATION)*1000)
         self.last_track = entry.get_string(RB.RhythmDBPropType.LOCATION)
         downinfo = YMClient.tracks_download_info(track_id=self.last_track, get_direct_links=True)
-        YMClient.rotor_station_feedback_track_started(station=self.station, track_id=self.last_track)
+#        YMClient.rotor_station_feedback_track_started(station=self.station, track_id=self.last_track)
         return downinfo[1].direct_link
 
 class YMDashboardSource(RB.BrowserSource):
