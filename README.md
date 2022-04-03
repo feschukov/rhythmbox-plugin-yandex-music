@@ -1,6 +1,6 @@
 # Yandex Music Rhythmbox plugin
 Плагин для работы с музыкальным сервисом Яндекс.Музыка в Rhythmbox.
-
+![Screenshot](https://user-images.githubusercontent.com/11454622/161440160-655114ee-87ec-4929-af50-da43ee5dc56b.png)
 ## Установка
 Для работы плагина требуется установить [неофициальную Python библиотеку API Yandex Music](https://github.com/MarshalX/yandex-music-api).
 
