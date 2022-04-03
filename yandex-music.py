@@ -2,31 +2,6 @@ from gi.repository import GObject, RB, Peas, Gio, GLib, Gdk, Gtk
 from yandex_music import Client
 import requests
 
-def generate_token_by_username_and_password(login, password):
-
-    link_post = "https://oauth.yandex.com/token"
-    user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36"
-    header = {
-        "user-agent": user_agent
-    }
-
-    try:
-        request_post = f"grant_type=password&client_id=23cabbbdc6cd418abb4b39c32c41195d&client_secret=53bc75238f0c4d08a118e51fe9203300&username={login}&password={password}"
-        request_auth = requests.post(link_post, data=request_post, headers=header)
-
-        #if request_auth.status_code == 400:
-            #self.error_standart("Неправильные данные", "Yandex сказал мне что вы ввели неправильные данные, введите правильные", exit_or_no=False)
-        if request_auth.status_code == 200:
-            json_data = request_auth.json()
-            text = json_data.get('access_token')
-            return text
-
-    except requests.exceptions.ConnectionError:
-        
-        print('Проблемы с интернетом')
-        #self.error_standart("Проблемы с интернетом", "Проверьте интернет подключенние", exit_or_no=False)
-
-
 class YandexMusic(GObject.Object, Peas.Activatable):
     object = GObject.property(type=GObject.Object)
 
@@ -93,7 +68,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
             password = input_passwd.get_text()
             d.destroy()
             if len(login) > 0 and len(password) > 0:
-                token = generate_token_by_username_and_password(login, password)
+                token = self.generate_token(login, password)
                 if len(token) > 0:
                     self.settings.set_string('token', token)
             self.iterator += 1
@@ -102,6 +77,26 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         else:
             YMClient = Client(token).init()
             return True
+
+    def generate_token(self, login, password):
+        print('Hello');
+        link_post = "https://oauth.yandex.com/token"
+        user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36"
+        header = {
+            "user-agent": user_agent
+        }
+        try:
+            request_post = f"grant_type=password&client_id=23cabbbdc6cd418abb4b39c32c41195d&client_secret=53bc75238f0c4d08a118e51fe9203300&username={login}&password={password}"
+            request_auth = requests.post(link_post, data=request_post, headers=header)
+            if request_auth.status_code == 200:
+                json_data = request_auth.json()
+                token = json_data.get('access_token')
+                return token
+            else:
+                print('Не удалось получить токен')
+        except requests.exceptions.ConnectionError:
+            print('Не удалось отправить запрос на получение токена')
+        return '';
 
 class YMLikesEntry(RB.RhythmDBEntryType):
     def __init__(self):
