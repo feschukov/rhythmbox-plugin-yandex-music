@@ -8,7 +8,7 @@
 
 Затем скачать плагин и переместить его в папку с плагинами Rhythmbox.
 
-    $ wget https://github.com/dobroweb/rhythmbox-plugin-yandex-music/archive/refs/tags/0.1-alpha.tar.gz
+    $ wget https://github.com/dobroweb/rhythmbox-plugin-yandex-music/archive/refs/tags/0.2-alpha.tar.gz
     $ tar -zxvf rhythmbox-plugin-yandex-music*.tar.gz
     $ mkdir -p ~/.local/share/rhythmbox/plugins/
     $ mv rhythmbox-plugin-yandex-music* ~/.local/share/rhythmbox/plugins/yandex-music
