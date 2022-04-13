@@ -17,11 +17,12 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         db = shell.props.db
         self.page_group = RB.DisplayPageGroup(shell=shell, id='yandex-music-playlist', name=_('Яндекс.Музыка'), category=RB.DisplayPageGroupCategory.TRANSIENT)
         shell.append_display_page(self.page_group, None)
-        self.entry_type = YMLikesEntry()
+        self.login_yandex()
+        self.entry_type = YMLikesEntry(self.client)
         db.register_entry_type(self.entry_type)
         iconfile = Gio.File.new_for_path(self.plugin_info.get_data_dir()+'/yandex-music.svg')
         self.source = GObject.new(YMLikesSource, shell=shell, name=_('Мне нравится'), entry_type=self.entry_type, plugin=self, icon=Gio.FileIcon.new(iconfile))
-        self.source.setup(db, self.settings)
+        self.source.setup(db, self.client)
         shell.register_entry_type_for_source(self.source, self.entry_type)
         shell.append_display_page(self.source, self.page_group)
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.load_dashboard)
@@ -38,18 +39,17 @@ class YandexMusic(GObject.Object, Peas.Activatable):
     def load_dashboard(self):
         shell = self.object
         db = shell.props.db
-        if self.login_yandex():
-            dashboard = YMClient.rotor_stations_dashboard()
+        if self.client:
+            dashboard = self.client.rotor_stations_dashboard()
             for result in dashboard.stations:
-                entry_type = YMDashboardEntry(result.station.id.type+':'+result.station.id.tag)
+                entry_type = YMDashboardEntry(self.client, result.station.id.type+':'+result.station.id.tag)
                 source = GObject.new(YMDashboardSource, shell=shell, name=result.station.name, entry_type=entry_type, plugin=self)
-                source.setup(db, self.settings, result.station.id.type+':'+result.station.id.tag)
+                source.setup(db, self.client, result.station.id.type+':'+result.station.id.tag)
                 shell.register_entry_type_for_source(source, entry_type)
                 shell.append_display_page(source, self.page_group)
         return False
 
     def login_yandex(self):
-        global YMClient
         token = self.settings.get_string('token')
         self.iterator = 0
         while len(token) < 1 and self.iterator < 5:
@@ -75,7 +75,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         if len(token) < 1:
             return False
         else:
-            YMClient = Client(token).init()
+            self.client = Client(token).init()
             return True
 
     def generate_token(self, login, password):
@@ -98,29 +98,28 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         return '';
 
 class YMLikesEntry(RB.RhythmDBEntryType):
-    def __init__(self):
+    def __init__(self, client):
         RB.RhythmDBEntryType.__init__(self, name='ym-likes-type', save_to_disk=False)
+        self.client = client
 
     def do_get_playback_uri(self, entry):
-        global YMClient
         track_id = entry.get_string(RB.RhythmDBPropType.LOCATION)
-        downinfo = YMClient.tracks_download_info(track_id=track_id, get_direct_links=True)
+        downinfo = self.client.tracks_download_info(track_id=track_id, get_direct_links=True)
         return downinfo[1].direct_link
 
     def do_destroy_entry(self, entry):
-        global YMClient
         track_id = entry.get_string(RB.RhythmDBPropType.LOCATION)
-        return YMClient.users_likes_tracks_remove(track_ids=track_id)
+        return self.client.users_likes_tracks_remove(track_ids=track_id)
 
 class YMLikesSource(RB.BrowserSource):
     def __init__(self):
         RB.BrowserSource.__init__(self)
 
-    def setup(self, db, settings):
+    def setup(self, db, client):
         self.initialised = False
         self.db = db
         self.entry_type = self.props.entry_type
-        self.settings = settings
+        self.client = client
 
     def do_selected(self):
         if not self.initialised:
@@ -128,8 +127,7 @@ class YMLikesSource(RB.BrowserSource):
             Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.users_likes_tracks)
 
     def users_likes_tracks(self):
-        global YMClient
-        tracks = YMClient.users_likes_tracks().fetch_tracks()
+        tracks = self.client.users_likes_tracks().fetch_tracks()
         self.iterator = 0
         self.listcount = len(tracks)
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entry, tracks)
@@ -158,29 +156,29 @@ class YMLikesSource(RB.BrowserSource):
             return True
 
 class YMDashboardEntry(RB.RhythmDBEntryType):
-    def __init__(self, station):
+    def __init__(self, client, station):
         RB.RhythmDBEntryType.__init__(self, name='ym-dashboard-entry', save_to_disk=False)
+        self.client = client
         self.station = station
         self.last_track = None
 
     def do_get_playback_uri(self, entry):
-        global YMClient
 #        if self.last_track:
-#            YMClient.rotor_station_feedback_track_finished(station=self.station, track_id=self.last_track, total_played_seconds=entry.get_ulong(RB.RhythmDBPropType.DURATION)*1000)
+#            self.client.rotor_station_feedback_track_finished(station=self.station, track_id=self.last_track, total_played_seconds=entry.get_ulong(RB.RhythmDBPropType.DURATION)*1000)
         self.last_track = entry.get_string(RB.RhythmDBPropType.LOCATION)
-        downinfo = YMClient.tracks_download_info(track_id=self.last_track, get_direct_links=True)
-#        YMClient.rotor_station_feedback_track_started(station=self.station, track_id=self.last_track)
+        downinfo = self.client.tracks_download_info(track_id=self.last_track, get_direct_links=True)
+#        self.client.rotor_station_feedback_track_started(station=self.station, track_id=self.last_track)
         return downinfo[1].direct_link
 
 class YMDashboardSource(RB.BrowserSource):
     def __init__(self):
         RB.BrowserSource.__init__(self)
 
-    def setup(self, db, settings, station):
+    def setup(self, db, client, station):
         self.initialised = False
         self.db = db
         self.entry_type = self.props.entry_type
-        self.settings = settings
+        self.client = client
         self.station = station
         self.last_track = None
 
@@ -188,8 +186,7 @@ class YMDashboardSource(RB.BrowserSource):
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.rotor_station_tracks)
 
     def rotor_station_tracks(self):
-        global YMClient
-        tracks = YMClient.rotor_station_tracks(station=self.station, queue=self.last_track).sequence
+        tracks = self.client.rotor_station_tracks(station=self.station, queue=self.last_track).sequence
         self.iterator = 0
         self.listcount = len(tracks)
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entry, tracks)
@@ -217,5 +214,3 @@ class YMDashboardSource(RB.BrowserSource):
             return False
         else:
             return True
-
-GObject.type_register(YMLikesSource)
