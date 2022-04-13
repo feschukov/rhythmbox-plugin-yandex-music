@@ -83,11 +83,13 @@ class YandexMusic(GObject.Object, Peas.Activatable):
     def generate_token(self, login, password):
         link_post = "https://oauth.yandex.com/token"
         user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36"
+        client_id = "23cabbbdc6cd418abb4b39c32c41195d"
+        client_secret = "53bc75238f0c4d08a118e51fe9203300"
         header = {
             "user-agent": user_agent
         }
         try:
-            request_post = f"grant_type=password&client_id=23cabbbdc6cd418abb4b39c32c41195d&client_secret=53bc75238f0c4d08a118e51fe9203300&username={login}&password={password}"
+            request_post = f"grant_type=password&client_id={client_id}&client_secret={client_secret}&username={login}&password={password}"
             request_auth = requests.post(link_post, data=request_post, headers=header)
             if request_auth.status_code == 200:
                 json_data = request_auth.json()
