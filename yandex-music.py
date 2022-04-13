@@ -103,7 +103,7 @@ class YMLikesEntry(RB.RhythmDBEntryType):
         self.client = client
 
     def do_get_playback_uri(self, entry):
-        track_id = entry.get_string(RB.RhythmDBPropType.LOCATION)
+        track_id = entry.get_string(RB.RhythmDBPropType.LOCATION)[6:]
         downinfo = self.client.tracks_download_info(track_id=track_id, get_direct_links=True)
         return downinfo[1].direct_link
 
@@ -136,7 +136,7 @@ class YMLikesSource(RB.BrowserSource):
     def add_entry(self, tracks):
         track = tracks[self.iterator]
         if track.available:
-            entry = RB.RhythmDBEntry.new(self.db, self.entry_type, str(track.id)+':'+str(track.albums[0].id))
+            entry = RB.RhythmDBEntry.new(self.db, self.entry_type, 'likes:'+str(track.id)+':'+str(track.albums[0].id))
             if entry is not None:
                 self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, track.title)
                 self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, track.duration_ms/1000)
@@ -165,7 +165,7 @@ class YMDashboardEntry(RB.RhythmDBEntryType):
     def do_get_playback_uri(self, entry):
 #        if self.last_track:
 #            self.client.rotor_station_feedback_track_finished(station=self.station, track_id=self.last_track, total_played_seconds=entry.get_ulong(RB.RhythmDBPropType.DURATION)*1000)
-        self.last_track = entry.get_string(RB.RhythmDBPropType.LOCATION)
+        self.last_track = entry.get_string(RB.RhythmDBPropType.LOCATION)[5:]
         downinfo = self.client.tracks_download_info(track_id=self.last_track, get_direct_links=True)
 #        self.client.rotor_station_feedback_track_started(station=self.station, track_id=self.last_track)
         return downinfo[1].direct_link
@@ -195,7 +195,7 @@ class YMDashboardSource(RB.BrowserSource):
     def add_entry(self, tracks):
         track = tracks[self.iterator].track
         if track.available:
-            entry = RB.RhythmDBEntry.new(self.db, self.entry_type, str(track.id)+':'+str(track.albums[0].id))
+            entry = RB.RhythmDBEntry.new(self.db, self.entry_type, 'feed:'+str(track.id)+':'+str(track.albums[0].id))
             if entry is not None:
                 self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, track.title)
                 self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, track.duration_ms/1000)
