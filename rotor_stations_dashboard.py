@@ -40,19 +40,21 @@ class YMDashboardSource(RB.BrowserSource):
     def add_entry(self, tracks):
         track = tracks[self.iterator].track
         if track.available:
-            entry = RB.RhythmDBEntry.new(self.db, self.entry_type, self.station[:6]+str(track.id)+':'+str(track.albums[0].id))
-            if entry is not None:
-                self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, track.title)
-                self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, track.duration_ms/1000)
-                artists = ''
-                for artist in track.artists:
-                    if len(artists) > 1:
-                        artists += ', '+artist.name
-                    else:
-                        artists = artist.name
-                self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, artists)
-                self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, track.albums[0].title)
-                self.db.commit()
+            entry = self.db.entry_lookup_by_location(self.station[:6]+str(track.id)+':'+str(track.albums[0].id))
+            if entry is None:
+                entry = RB.RhythmDBEntry.new(self.db, self.entry_type, self.station[:6]+str(track.id)+':'+str(track.albums[0].id))
+                if entry is not None:
+                    self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, track.title)
+                    self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, track.duration_ms/1000)
+                    artists = ''
+                    for artist in track.artists:
+                        if len(artists) > 1:
+                            artists += ', '+artist.name
+                        else:
+                            artists = artist.name
+                    self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, artists)
+                    self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, track.albums[0].title)
+                    self.db.commit()
         self.iterator += 1
         if self.iterator >= self.listcount:
             self.last_track = str(track.id)+':'+str(track.albums[0].id)
