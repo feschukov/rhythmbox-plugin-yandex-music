@@ -44,18 +44,20 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         db = shell.props.db
         if self.client:
             dashboard = self.client.rotor_stations_dashboard()
+            iterator = 0;
             for result in dashboard.stations:
-                entry_type = YMDashboardEntry(self.client, result.station.id.type+':'+result.station.id.tag)
+                entry_type = YMDashboardEntry(self.client, 'feed'+str(iterator)+'_'+result.station.id.type+':'+result.station.id.tag)
                 source = GObject.new(YMDashboardSource, shell=shell, name=result.station.name, entry_type=entry_type, plugin=self)
-                source.setup(db, self.client, result.station.id.type+':'+result.station.id.tag)
+                source.setup(db, self.client, 'feed'+str(iterator)+'_'+result.station.id.type+':'+result.station.id.tag)
                 shell.register_entry_type_for_source(source, entry_type)
                 shell.append_display_page(source, self.page_group)
+                iterator += 1
         return False
 
     def login_yandex(self):
         token = self.settings.get_string('token')
-        self.iterator = 0
-        while not token and self.iterator < 5:
+        iterator = 0
+        while not token and iterator < 5:
             window = YMAuthWindow(None)
             response = window.run()
             if (response == Gtk.ResponseType.OK):
@@ -68,7 +70,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
             elif (response == Gtk.ResponseType.CANCEL):
                 window.destroy()
                 return False
-            self.iterator += 1
+            iterator += 1
         self.client = Client(token).init()
         return isinstance(self.client, Client)
 

@@ -39,7 +39,7 @@ class YMLikesSource(RB.BrowserSource):
     def add_entry(self, tracks):
         track = tracks[self.iterator]
         if track.available:
-            entry = RB.RhythmDBEntry.new(self.db, self.entry_type, 'likes:'+str(track.id)+':'+str(track.albums[0].id))
+            entry = RB.RhythmDBEntry.new(self.db, self.entry_type, 'likes_'+str(track.id)+':'+str(track.albums[0].id))
             if entry is not None:
                 self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, track.title)
                 self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, track.duration_ms/1000)
