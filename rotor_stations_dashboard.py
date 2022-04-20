@@ -8,7 +8,7 @@ class YMDashboardEntry(RB.RhythmDBEntryType):
         self.last_track = None
 
     def do_get_playback_uri(self, entry):
-#        if self.last_track:
+#        if self.last_track is not None:
 #            self.client.rotor_station_feedback_track_finished(station=self.station, track_id=self.last_track, total_played_seconds=entry.get_ulong(RB.RhythmDBPropType.DURATION)*1000)
         self.last_track = entry.get_string(RB.RhythmDBPropType.LOCATION)[6:]
         downinfo = self.client.tracks_download_info(track_id=self.last_track, get_direct_links=True)
@@ -57,7 +57,6 @@ class YMDashboardSource(RB.BrowserSource):
                     self.db.commit()
         self.iterator += 1
         if self.iterator >= self.listcount:
-            self.last_track = str(track.id)+':'+str(track.albums[0].id)
             return False
         else:
             return True
