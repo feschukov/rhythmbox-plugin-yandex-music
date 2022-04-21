@@ -1,14 +1,20 @@
 from gi.repository import RB, GLib, Gdk
 
 class YMLikesEntry(RB.RhythmDBEntryType):
-    def __init__(self, client):
+    def __init__(self, db, client):
         RB.RhythmDBEntryType.__init__(self, name='ym-likes-type', save_to_disk=False)
+        self.db = db
         self.client = client
 
     def do_get_playback_uri(self, entry):
-        track_id = entry.get_string(RB.RhythmDBPropType.LOCATION)[6:]
-        downinfo = self.client.tracks_download_info(track_id=track_id, get_direct_links=True)
-        return downinfo[1].direct_link
+        uri = entry.get_string(RB.RhythmDBPropType.MOUNTPOINT)
+        if uri is None:
+            track_id = entry.get_string(RB.RhythmDBPropType.LOCATION)[6:]
+            downinfo = self.client.tracks_download_info(track_id=track_id, get_direct_links=True)
+            uri = downinfo[1].direct_link
+            self.db.entry_set(entry, RB.RhythmDBPropType.MOUNTPOINT, uri)
+            self.db.commit()
+        return uri
 
     def do_destroy_entry(self, entry):
         track_id = entry.get_string(RB.RhythmDBPropType.LOCATION)

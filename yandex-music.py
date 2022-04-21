@@ -21,7 +21,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         self.page_group = RB.DisplayPageGroup(shell=shell, id='yandex-music-playlist', name=_('Яндекс.Музыка'), category=RB.DisplayPageGroupType.TRANSIENT)
         if self.login_yandex():
             shell.append_display_page(self.page_group, None)
-            self.entry_type = YMLikesEntry(self.client)
+            self.entry_type = YMLikesEntry(db, self.client)
             db.register_entry_type(self.entry_type)
             iconfile = Gio.File.new_for_path(self.plugin_info.get_data_dir()+'/yandex-music.svg')
             self.source = GObject.new(YMLikesSource, shell=shell, name=_('Мне нравится'), entry_type=self.entry_type, plugin=self, icon=Gio.FileIcon.new(iconfile))
