@@ -18,7 +18,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         self.settings = Gio.Settings.new_full(schema, None, None)
         shell = self.object
         db = shell.props.db
-        self.page_group = RB.DisplayPageGroup(shell=shell, id='yandex-music-playlist', name=_('Яндекс.Музыка'), category=RB.DisplayPageGroupCategory.TRANSIENT)
+        self.page_group = RB.DisplayPageGroup(shell=shell, id='yandex-music-playlist', name=_('Яндекс.Музыка'), category=RB.DisplayPageGroupType.TRANSIENT)
         if self.login_yandex():
             shell.append_display_page(self.page_group, None)
             self.entry_type = YMLikesEntry(self.client)
