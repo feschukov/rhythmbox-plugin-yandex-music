@@ -46,7 +46,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
             dashboard = self.client.rotor_stations_dashboard()
             iterator = 0;
             for result in dashboard.stations:
-                entry_type = YMDashboardEntry(self.client, 'feed'+str(iterator)+'_'+result.station.id.type+':'+result.station.id.tag)
+                entry_type = YMDashboardEntry(db, self.client, 'feed'+str(iterator)+'_'+result.station.id.type+':'+result.station.id.tag)
                 source = GObject.new(YMDashboardSource, shell=shell, name=result.station.name, entry_type=entry_type, plugin=self)
                 source.setup(db, self.client, 'feed'+str(iterator)+'_'+result.station.id.type+':'+result.station.id.tag)
                 shell.register_entry_type_for_source(source, entry_type)

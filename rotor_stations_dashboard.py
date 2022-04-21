@@ -1,8 +1,9 @@
 from gi.repository import RB, GLib, Gdk
 
 class YMDashboardEntry(RB.RhythmDBEntryType):
-    def __init__(self, client, station):
+    def __init__(self, db, client, station):
         RB.RhythmDBEntryType.__init__(self, name='ym-dashboard-entry', save_to_disk=False)
+        self.db = db
         self.client = client
         self.station = station[6:]
         self.last_track = None
@@ -15,6 +16,8 @@ class YMDashboardEntry(RB.RhythmDBEntryType):
         if uri is None:
             downinfo = self.client.tracks_download_info(track_id=new_track, get_direct_links=True)
             uri = downinfo[1].direct_link
+            self.db.entry_set(entry, RB.RhythmDBPropType.MOUNTPOINT, uri)
+            self.db.commit()
 #        if self.last_track != new_track:
 #            self.client.rotor_station_feedback_track_started(station=self.station, track_id=new_track)
         self.last_track = new_track
