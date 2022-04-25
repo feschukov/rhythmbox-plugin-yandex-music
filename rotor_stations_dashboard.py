@@ -13,7 +13,7 @@ class YMDashboardEntry(RB.RhythmDBEntryType):
         new_track = entry.get_string(RB.RhythmDBPropType.LOCATION)[6:]
         if (self.last_track is not None) and (self.last_track != new_track):
             self.client.rotor_station_feedback_track_finished(station=self.station, track_id=self.last_track, total_played_seconds=self.last_duration)
-        uri = entry.get_string(RB.RhythmDBPropType.MOUNTPOINT)
+        uri = None #entry.get_string(RB.RhythmDBPropType.MOUNTPOINT)
         if uri is None:
             downinfo = self.client.tracks_download_info(track_id=new_track, get_direct_links=True)
             uri = downinfo[1].direct_link
