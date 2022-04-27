@@ -42,7 +42,7 @@ class YMLikesSource(RB.BrowserSource):
             Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.users_likes_tracks)
 
     def users_likes_tracks(self):
-        tracks = self.load_tracks
+        tracks = self.load_tracks()
         self.iterator = 0
         self.listcount = len(tracks)
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entry, tracks)

@@ -1,5 +1,5 @@
 from gi.repository import RB, GLib, Gdk
-from rotor_station_tracks import YMFeedSource
+from rotor_stations_dashboard import YMFeedSource
 
 class YMUserPlaylistSource(YMFeedSource):
     def load_tracks(self):
