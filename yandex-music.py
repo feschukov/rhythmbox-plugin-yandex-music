@@ -2,7 +2,8 @@ from gi.repository import GObject, RB, Peas, Gio, GLib, Gdk, Gtk
 from yandex_music import Client
 from windows import YMAuthWindow
 from user_likes import YMLikesEntry, YMLikesSource
-from rotor_stations_dashboard import YMDashboardEntry, YMDashboardSource
+from user_playlists import YMUserPlaylistSource
+from rotor_stations_dashboard import YMFeedEntry, YMFeedSource
 import requests
 
 class YandexMusic(GObject.Object, Peas.Activatable):
@@ -28,6 +29,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
             self.source.setup(db, self.client)
             shell.register_entry_type_for_source(self.source, self.entry_type)
             shell.append_display_page(self.source, self.page_group)
+            Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.load_users_playlists)
             Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.load_dashboard)
 
     def do_deactivate(self):
@@ -39,15 +41,29 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         self.client = None
         self.settings = None
 
+    def load_users_playlists(self):
+        shell = self.object
+        db = shell.props.db
+        if self.client:
+            playlists = self.client.users_playlists_list()
+            iterator = 0
+            for result in playlists:
+                entry_type = YMLikesEntry(db, self.client)
+                source = GObject.new(YMUserPlaylistSource, shell=shell, name=result.title, entry_type=entry_type, plugin=self)
+                source.setup(db, self.client, 'mepl'+str(iterator)+'_'+str(result.kind))
+                shell.register_entry_type_for_source(source, entry_type)
+                shell.append_display_page(source, self.page_group)
+                iterator += 1
+
     def load_dashboard(self):
         shell = self.object
         db = shell.props.db
         if self.client:
             dashboard = self.client.rotor_stations_dashboard()
-            iterator = 0;
+            iterator = 0
             for result in dashboard.stations:
-                entry_type = YMDashboardEntry(db, self.client, 'feed'+str(iterator)+'_'+result.station.id.type+':'+result.station.id.tag)
-                source = GObject.new(YMDashboardSource, shell=shell, name=result.station.name, entry_type=entry_type, plugin=self)
+                entry_type = YMFeedEntry(db, self.client, 'feed'+str(iterator)+'_'+result.station.id.type+':'+result.station.id.tag)
+                source = GObject.new(YMFeedSource, shell=shell, name=result.station.name, entry_type=entry_type, plugin=self)
                 source.setup(db, self.client, 'feed'+str(iterator)+'_'+result.station.id.type+':'+result.station.id.tag)
                 shell.register_entry_type_for_source(source, entry_type)
                 shell.append_display_page(source, self.page_group)

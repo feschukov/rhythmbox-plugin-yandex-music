@@ -1,8 +1,8 @@
 from gi.repository import RB, GLib, Gdk
 
-class YMDashboardEntry(RB.RhythmDBEntryType):
+class YMFeedEntry(RB.RhythmDBEntryType):
     def __init__(self, db, client, station):
-        RB.RhythmDBEntryType.__init__(self, name='ym-dashboard-entry', save_to_disk=False)
+        RB.RhythmDBEntryType.__init__(self, name='ym-feed-entry', save_to_disk=False)
         self.db = db
         self.client = client
         self.station = station[6:]
@@ -25,7 +25,7 @@ class YMDashboardEntry(RB.RhythmDBEntryType):
         self.last_duration = entry.get_ulong(RB.RhythmDBPropType.DURATION)*1000
         return uri
 
-class YMDashboardSource(RB.BrowserSource):
+class YMFeedSource(RB.BrowserSource):
     def __init__(self):
         RB.BrowserSource.__init__(self)
 
@@ -37,18 +37,24 @@ class YMDashboardSource(RB.BrowserSource):
         self.station = station
         self.last_track = None
 
-    def do_selected(self):
-        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.rotor_station_tracks)
+    def load_tracks(self):
+        return self.client.rotor_station_tracks(station=self.station[6:], queue=self.last_track).sequence
 
-    def rotor_station_tracks(self):
-        tracks = self.client.rotor_station_tracks(station=self.station[6:], queue=self.last_track).sequence
+    def load_track(self, track):
+        return track.track;
+
+    def do_selected(self):
+        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entries)
+
+    def add_entries(self):
+        tracks = self.load_tracks()
         self.iterator = 0
         self.listcount = len(tracks)
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entry, tracks)
         return False
 
     def add_entry(self, tracks):
-        track = tracks[self.iterator].track
+        track = self.load_track(tracks[self.iterator])
         if track.available:
             entry = self.db.entry_lookup_by_location(self.station[:6]+str(track.id)+':'+str(track.albums[0].id))
             if entry is None:
@@ -67,6 +73,7 @@ class YMDashboardSource(RB.BrowserSource):
                     self.db.commit()
         self.iterator += 1
         if self.iterator >= self.listcount:
+            self.last_track = str(track.id)+':'+str(track.albums[0].id)
             return False
         else:
             return True
