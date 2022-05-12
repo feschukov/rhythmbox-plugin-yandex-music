@@ -1,4 +1,5 @@
 from gi.repository import RB, GLib, Gdk
+import requests
 
 class YMLikesEntry(RB.RhythmDBEntryType):
     def __init__(self, db, client):
@@ -7,8 +8,12 @@ class YMLikesEntry(RB.RhythmDBEntryType):
         self.client = client
 
     def do_get_playback_uri(self, entry):
-        uri = None #entry.get_string(RB.RhythmDBPropType.MOUNTPOINT)
-        if uri is None:
+        uri = entry.get_string(RB.RhythmDBPropType.MOUNTPOINT)
+        need_request = uri is None
+        if not need_request:
+            r = requests.head(uri)
+            need_request = (r.status_code != 200)
+        if need_request:
             track_id = entry.get_string(RB.RhythmDBPropType.LOCATION)[6:]
             downinfo = self.client.tracks_download_info(track_id=track_id, get_direct_links=True)
             uri = downinfo[1].direct_link

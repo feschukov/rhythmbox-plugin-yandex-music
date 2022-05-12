@@ -1,4 +1,5 @@
 from gi.repository import RB, GLib, Gdk
+import requests
 
 class YMFeedEntry(RB.RhythmDBEntryType):
     def __init__(self, db, client, station):
@@ -13,8 +14,12 @@ class YMFeedEntry(RB.RhythmDBEntryType):
         new_track = entry.get_string(RB.RhythmDBPropType.LOCATION)[6:]
         if (self.last_track is not None) and (self.last_track != new_track):
             self.client.rotor_station_feedback_track_finished(station=self.station, track_id=self.last_track, total_played_seconds=self.last_duration)
-        uri = None #entry.get_string(RB.RhythmDBPropType.MOUNTPOINT)
-        if uri is None:
+        uri = entry.get_string(RB.RhythmDBPropType.MOUNTPOINT)
+        need_request = uri is None
+        if not need_request:
+            r = requests.head(uri)
+            need_request = (r.status_code != 200)
+        if need_request:
             downinfo = self.client.tracks_download_info(track_id=new_track, get_direct_links=True)
             uri = downinfo[1].direct_link
             self.db.entry_set(entry, RB.RhythmDBPropType.MOUNTPOINT, uri)
