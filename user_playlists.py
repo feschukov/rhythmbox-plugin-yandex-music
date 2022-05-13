@@ -1,4 +1,3 @@
-from gi.repository import RB, GLib, Gdk
 from rotor_stations_dashboard import YMFeedSource
 
 class YMUserPlaylistSource(YMFeedSource):
