@@ -34,7 +34,6 @@ class YandexMusic(GObject.Object, Peas.Activatable):
 
     def do_deactivate(self):
         print('Yandex.Music plugin deactivating')
-        self.source.delete_thyself()
         self.source = None
         self.page_group = None
         self.entry_type = None
@@ -109,6 +108,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
                 return token
             else:
                 print('Не удалось получить токен')
+                print(request_auth.json())
         except requests.exceptions.ConnectionError:
             print('Не удалось отправить запрос на получение токена')
         return '';
