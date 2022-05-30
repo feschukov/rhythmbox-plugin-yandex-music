@@ -6,12 +6,13 @@ class YMFeedEntry(RB.RhythmDBEntryType):
         RB.RhythmDBEntryType.__init__(self, name='ym-feed-entry', save_to_disk=False)
         self.db = db
         self.client = client
-        self.station = station[6:]
+        self.station = station[station.find('_')+1:]
+        self.station_prefix = station[:station.find('_')+1]
         self.last_track = None
         self.last_duration = None
 
     def do_get_playback_uri(self, entry):
-        new_track = entry.get_string(RB.RhythmDBPropType.LOCATION)[6:]
+        new_track = entry.get_string(RB.RhythmDBPropType.LOCATION)[len(self.station_prefix):]
         if (self.last_track is not None) and (self.last_track != new_track):
             self.client.rotor_station_feedback_track_finished(station=self.station, track_id=self.last_track, total_played_seconds=self.last_duration)
         uri = entry.get_string(RB.RhythmDBPropType.MOUNTPOINT)
@@ -45,11 +46,12 @@ class YMFeedSource(RB.BrowserSource):
         self.db = db
         self.entry_type = self.props.entry_type
         self.client = client
-        self.station = station
+        self.station = station[station.find('_')+1:]
+        self.station_prefix = station[:station.find('_')+1]
         self.last_track = None
 
     def load_tracks(self):
-        return self.client.rotor_station_tracks(station=self.station[6:], queue=self.last_track).sequence
+        return self.client.rotor_station_tracks(station=self.station, queue=self.last_track).sequence
 
     def load_track(self, track):
         return track.track;
@@ -67,9 +69,9 @@ class YMFeedSource(RB.BrowserSource):
     def add_entry(self, tracks):
         track = self.load_track(tracks[self.iterator])
         if track.available:
-            entry = self.db.entry_lookup_by_location(self.station[:6]+str(track.id)+':'+str(track.albums[0].id))
+            entry = self.db.entry_lookup_by_location(self.station_prefix+str(track.id)+':'+str(track.albums[0].id))
             if entry is None:
-                entry = RB.RhythmDBEntry.new(self.db, self.entry_type, self.station[:6]+str(track.id)+':'+str(track.albums[0].id))
+                entry = RB.RhythmDBEntry.new(self.db, self.entry_type, self.station_prefix+str(track.id)+':'+str(track.albums[0].id))
                 if entry is not None:
                     self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, track.title)
                     self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, track.duration_ms/1000)
