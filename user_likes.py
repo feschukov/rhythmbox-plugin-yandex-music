@@ -25,6 +25,12 @@ class YMLikesEntry(RB.RhythmDBEntryType):
         track_id = entry.get_string(RB.RhythmDBPropType.LOCATION)
         return self.client.users_likes_tracks_remove(track_ids=track_id)
 
+    def can_sync_metadata(self, entry):
+        return False
+
+    def do_sync_metadata(self, entry, changes):
+        return
+
 class YMLikesSource(RB.BrowserSource):
     def __init__(self):
         RB.BrowserSource.__init__(self)

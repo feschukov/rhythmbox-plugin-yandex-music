@@ -30,6 +30,12 @@ class YMFeedEntry(RB.RhythmDBEntryType):
         self.last_duration = entry.get_ulong(RB.RhythmDBPropType.DURATION)*1000
         return uri
 
+    def can_sync_metadata(self, entry):
+        return False
+
+    def do_sync_metadata(self, entry, changes):
+        return
+
 class YMFeedSource(RB.BrowserSource):
     def __init__(self):
         RB.BrowserSource.__init__(self)
