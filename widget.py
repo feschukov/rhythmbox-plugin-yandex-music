@@ -1,6 +1,6 @@
 from gi.repository import Gtk
 
-class YMAuthWindow(Gtk.Dialog):
+class AuthDialog(Gtk.Dialog):
     res = {"login": None, "password": None}
 
     def __init__(self, parent):

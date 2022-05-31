@@ -1,6 +1,6 @@
 [Plugin]
 Loader=python3
-Module=yandex-music
+Module=plugin
 IAge=2
 Name=Yandex.Music
 Name[ru]=Яндекс.Музыка

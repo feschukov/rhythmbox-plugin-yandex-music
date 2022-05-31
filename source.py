@@ -1,43 +1,6 @@
 from gi.repository import RB, GLib, Gdk
-import requests
 
-class YMFeedEntry(RB.RhythmDBEntryType):
-    def __init__(self, db, client, station):
-        RB.RhythmDBEntryType.__init__(self, name='ym-feed-entry', save_to_disk=False)
-        self.db = db
-        self.client = client
-        self.station = station[station.find('_')+1:]
-        self.station_prefix = station[:station.find('_')+1]
-        self.last_track = None
-        self.last_duration = None
-
-    def do_get_playback_uri(self, entry):
-        new_track = entry.get_string(RB.RhythmDBPropType.LOCATION)[len(self.station_prefix):]
-        if (self.last_track is not None) and (self.last_track != new_track):
-            self.client.rotor_station_feedback_track_finished(station=self.station, track_id=self.last_track, total_played_seconds=self.last_duration)
-        uri = entry.get_string(RB.RhythmDBPropType.MOUNTPOINT)
-        need_request = uri is None
-        if not need_request:
-            r = requests.head(uri)
-            need_request = (r.status_code != 200)
-        if need_request:
-            downinfo = self.client.tracks_download_info(track_id=new_track, get_direct_links=True)
-            uri = downinfo[1].direct_link
-            self.db.entry_set(entry, RB.RhythmDBPropType.MOUNTPOINT, uri)
-            self.db.commit()
-        if self.last_track != new_track:
-            self.client.rotor_station_feedback_track_started(station=self.station, track_id=new_track)
-        self.last_track = new_track
-        self.last_duration = entry.get_ulong(RB.RhythmDBPropType.DURATION)*1000
-        return uri
-
-    def can_sync_metadata(self, entry):
-        return False
-
-    def do_sync_metadata(self, entry, changes):
-        return
-
-class YMFeedSource(RB.BrowserSource):
+class YandexMusicSource(RB.BrowserSource):
     def __init__(self):
         RB.BrowserSource.__init__(self)
 
@@ -48,26 +11,36 @@ class YMFeedSource(RB.BrowserSource):
         self.client = client
         self.station = station[station.find('_')+1:]
         self.station_prefix = station[:station.find('_')+1]
+        self.is_feed = (station.find('feed') == 0)
         self.last_track = None
 
     def load_tracks(self):
         return self.client.rotor_station_tracks(station=self.station, queue=self.last_track).sequence
 
-    def load_track(self, track):
-        return track.track;
-
     def do_selected(self):
-        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entries)
+        if not self.initialised or self.is_feed:
+            self.initialised = True
+            Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entries)
 
     def add_entries(self):
-        tracks = self.load_tracks()
+        if self.station_prefix == 'likes_':
+            tracks = self.client.users_likes_tracks().fetch_tracks()
+        elif self.station_prefix.find('feed') == 0:
+            tracks = self.client.rotor_station_tracks(station=self.station, queue=self.last_track).sequence
+        elif self.station_prefix.find('mepl') == 0:
+            tracks = self.client.users_playlists(self.station).fetch_tracks()
+        else
+            tracks = {}
         self.iterator = 0
         self.listcount = len(tracks)
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entry, tracks)
         return False
 
     def add_entry(self, tracks):
-        track = self.load_track(tracks[self.iterator])
+        try:
+            track = tracks[self.iterator].track
+        except NameError:
+            track = tracks[self.iterator]
         if track.available:
             entry = self.db.entry_lookup_by_location(self.station_prefix+str(track.id)+':'+str(track.albums[0].id))
             if entry is None:
