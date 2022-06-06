@@ -30,7 +30,7 @@ class YandexMusicSource(RB.BrowserSource):
         elif self.station_prefix.find('mepl') == 0:
             tracks = self.client.users_playlists(self.station).fetch_tracks()
         else:
-            tracks = {}
+            return False
         self.iterator = 0
         self.listcount = len(tracks)
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entry, tracks)
