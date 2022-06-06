@@ -39,7 +39,7 @@ class YandexMusicSource(RB.BrowserSource):
     def add_entry(self, tracks):
         try:
             track = tracks[self.iterator].track
-        except NameError:
+        except AttributeError:
             track = tracks[self.iterator]
         if track.available:
             entry = self.db.entry_lookup_by_location(self.station_prefix+str(track.id)+':'+str(track.albums[0].id))
