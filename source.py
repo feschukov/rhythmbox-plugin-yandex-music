@@ -29,7 +29,7 @@ class YandexMusicSource(RB.BrowserSource):
             tracks = self.client.rotor_station_tracks(station=self.station, queue=self.last_track).sequence
         elif self.station_prefix.find('mepl') == 0:
             tracks = self.client.users_playlists(self.station).fetch_tracks()
-        else
+        else:
             tracks = {}
         self.iterator = 0
         self.listcount = len(tracks)
