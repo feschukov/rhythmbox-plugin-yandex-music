@@ -46,9 +46,12 @@ class YandexMusicSource(RB.BrowserSource):
         except AttributeError:
             track = tracks[self.iterator]
         if track.available:
-            entry = self.db.entry_lookup_by_location(self.station_prefix+str(track.id)+':'+str(track.albums[0].id))
+            track_location = self.station_prefix+str(track.id)
+            if len(track.albums) > 0:
+                track_location = track_location+':'+str(track.albums[0].id)
+            entry = self.db.entry_lookup_by_location(track_location)
             if entry is None:
-                entry = RB.RhythmDBEntry.new(self.db, self.entry_type, self.station_prefix+str(track.id)+':'+str(track.albums[0].id))
+                entry = RB.RhythmDBEntry.new(self.db, self.entry_type, track_location)
                 if entry is not None:
                     self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, track.title)
                     self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, track.duration_ms/1000)
@@ -59,7 +62,8 @@ class YandexMusicSource(RB.BrowserSource):
                         else:
                             artists = artist.name
                     self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, artists)
-                    self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, track.albums[0].title)
+                    if len(track.albums) > 0:
+                        self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, track.albums[0].title)
                     self.db.commit()
         self.iterator += 1
         if self.iterator >= self.listcount:
