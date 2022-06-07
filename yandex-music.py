@@ -46,11 +46,12 @@ class YandexMusic(GObject.Object, Peas.Activatable):
             playlists = self.client.users_playlists_list()
             iterator = 0
             for result in playlists:
-                entry_type = YandexMusicEntry(db, self.client, 'mepl_')
+                entry_type = YandexMusicEntry(db, self.client, 'mepl'+str(iterator)+'_'+str(result.kind))
                 source = GObject.new(YandexMusicSource, shell=shell, name=result.title, entry_type=entry_type, plugin=self, icon=Gio.FileIcon.new(self.iconfile))
                 source.setup(db, self.client, 'mepl'+str(iterator)+'_'+str(result.kind))
                 shell.register_entry_type_for_source(source, entry_type)
                 shell.append_display_page(source, self.page_group)
+                iterator += 1
 
     def load_dashboard(self):
         shell = self.object
