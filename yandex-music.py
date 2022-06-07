@@ -94,7 +94,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         token = self.settings.get_string('token')
         iterator = 0
         while not token and iterator < 5:
-            window = YMAuthWindow(None)
+            window = AuthDialog(None)
             response = window.run()
             if (response == Gtk.ResponseType.OK):
                 result = window.get_result()
