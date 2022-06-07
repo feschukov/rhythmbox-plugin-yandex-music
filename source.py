@@ -25,10 +25,14 @@ class YandexMusicSource(RB.BrowserSource):
     def add_entries(self):
         if self.station_prefix == 'likes_':
             tracks = self.client.users_likes_tracks().fetch_tracks()
+        elif self.station_prefix.find('mepl') == 0:
+            tracks = self.client.users_playlists(kind=self.station).fetch_tracks()
+        elif self.station_prefix.find('likepl') == 0:
+            user_id  = self.station[:self.station.find(':')]
+            album_id = self.station[self.station.find(':')+1:]
+            tracks = self.client.users_playlists(kind=album_id, user_id=user_id).fetch_tracks()
         elif self.station_prefix.find('feed') == 0:
             tracks = self.client.rotor_station_tracks(station=self.station, queue=self.last_track).sequence
-        elif self.station_prefix.find('mepl') == 0:
-            tracks = self.client.users_playlists(self.station).fetch_tracks()
         else:
             return False
         self.iterator = 0

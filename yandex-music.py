@@ -29,6 +29,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
             shell.register_entry_type_for_source(self.source, self.entry_type)
             shell.append_display_page(self.source, self.page_group)
             Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.load_users_playlists)
+            Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.load_users_likes_playlists)
             Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.load_dashboard)
 
     def do_deactivate(self):
@@ -52,6 +53,25 @@ class YandexMusic(GObject.Object, Peas.Activatable):
                 shell.register_entry_type_for_source(source, entry_type)
                 shell.append_display_page(source, self.page_group)
                 iterator += 1
+        return False
+
+    def load_users_likes_playlists(self):
+        shell = self.object
+        db = shell.props.db
+        if self.client:
+            page_group = RB.DisplayPageGroup(shell=shell, id='yandex-music-likes-playlists', name=_('Яндекс.Музыка')+': '+_('Мне нравится'), category=RB.DisplayPageGroupType.TRANSIENT)
+            shell.append_display_page(page_group, None)
+            playlists = self.client.users_likes_playlists()
+            iterator = 0
+            for result in playlists:
+                if result.type != 'playlist': continue
+                entry_type = YandexMusicEntry(db, self.client, 'likepl'+str(iterator)+'_'+str(result.playlist.uid)+':'+str(result.playlist.kind))
+                source = GObject.new(YandexMusicSource, shell=shell, name=result.playlist.title, entry_type=entry_type, plugin=self, icon=Gio.FileIcon.new(self.iconfile))
+                source.setup(db, self.client, 'likepl'+str(iterator)+'_'+str(result.playlist.uid)+':'+str(result.playlist.kind))
+                shell.register_entry_type_for_source(source, entry_type)
+                shell.append_display_page(source, page_group)
+                iterator += 1
+        return False
 
     def load_dashboard(self):
         shell = self.object
