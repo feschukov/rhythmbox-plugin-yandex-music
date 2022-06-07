@@ -7,87 +7,82 @@ import requests
 
 class YandexMusic(GObject.Object, Peas.Activatable):
     object = GObject.property(type=GObject.Object)
+    client = None
 
     def __init__(self):
         super(YandexMusic, self).__init__()
 
     def do_activate(self):
         print('Yandex.Music plugin activating')
+        self.shell = self.object
+        self.db = self.shell.props.db
+        self.icon = Gio.FileIcon.new(Gio.File.new_for_path(self.plugin_info.get_data_dir()+'/yandex-music.svg'))
         schema_source = Gio.SettingsSchemaSource.new_from_directory(self.plugin_info.get_data_dir(), Gio.SettingsSchemaSource.get_default(), False)
         schema = schema_source.lookup('org.gnome.rhythmbox.plugins.yandex-music', False)
         self.settings = Gio.Settings.new_full(schema, None, None)
-        shell = self.object
-        db = shell.props.db
         if self.login_yandex():
-            self.page_group = RB.DisplayPageGroup(shell=shell, id='yandex-music-playlist', name=_('Яндекс.Музыка'), category=RB.DisplayPageGroupType.TRANSIENT)
-            shell.append_display_page(self.page_group, None)
-            self.entry_type = YandexMusicEntry(db, self.client, 'likes_')
-            db.register_entry_type(self.entry_type)
-            self.iconfile = Gio.File.new_for_path(self.plugin_info.get_data_dir()+'/yandex-music.svg')
-            self.source = GObject.new(YandexMusicSource, shell=shell, name=_('Мне нравится'), entry_type=self.entry_type, plugin=self, icon=Gio.FileIcon.new(self.iconfile))
-            self.source.setup(db, self.client, 'likes_')
-            shell.register_entry_type_for_source(self.source, self.entry_type)
-            shell.append_display_page(self.source, self.page_group)
+            self.page_group = RB.DisplayPageGroup(shell=self.shell, id='yandex-music-playlist', name=_('Яндекс.Музыка'), category=RB.DisplayPageGroupType.TRANSIENT)
+            self.shell.append_display_page(self.page_group, None)
+            entry_type = YandexMusicEntry(self.db, self.client, 'likes_')
+            self.db.register_entry_type(entry_type)
+            source = GObject.new(YandexMusicSource, shell=self.shell, name=_('Мне нравится'), entry_type=entry_type, plugin=self, icon=self.icon)
+            source.setup(self.db, self.client, 'likes_')
+            self.shell.register_entry_type_for_source(source, entry_type)
+            self.shell.append_display_page(source, self.page_group)
             Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.load_users_playlists)
             Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.load_users_likes_playlists)
             Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.load_dashboard)
 
     def do_deactivate(self):
         print('Yandex.Music plugin deactivating')
-        self.source = None
-        self.page_group = None
-        self.entry_type = None
+        self.shell = None
         self.client = None
+        self.db = None
+        self.icon = None
         self.settings = None
 
     def load_users_playlists(self):
-        shell = self.object
-        db = shell.props.db
-        if self.client:
-            playlists = self.client.users_playlists_list()
-            iterator = 0
-            for result in playlists:
-                entry_type = YandexMusicEntry(db, self.client, 'mepl'+str(iterator)+'_'+str(result.kind))
-                source = GObject.new(YandexMusicSource, shell=shell, name=result.title, entry_type=entry_type, plugin=self, icon=Gio.FileIcon.new(self.iconfile))
-                source.setup(db, self.client, 'mepl'+str(iterator)+'_'+str(result.kind))
-                shell.register_entry_type_for_source(source, entry_type)
-                shell.append_display_page(source, self.page_group)
-                iterator += 1
+        if self.client is None: return False
+        playlists = self.client.users_playlists_list()
+        iterator = 0
+        for result in playlists:
+            entry_type = YandexMusicEntry(self.db, self.client, 'mepl'+str(iterator)+'_'+str(result.kind))
+            source = GObject.new(YandexMusicSource, shell=self.shell, name=result.title, entry_type=entry_type, plugin=self, icon=self.icon)
+            source.setup(self.db, self.client, 'mepl'+str(iterator)+'_'+str(result.kind))
+            self.shell.register_entry_type_for_source(source, entry_type)
+            self.shell.append_display_page(source, self.page_group)
+            iterator += 1
         return False
 
     def load_users_likes_playlists(self):
-        shell = self.object
-        db = shell.props.db
-        if self.client:
-            page_group = RB.DisplayPageGroup(shell=shell, id='yandex-music-likes-playlists', name=_('Яндекс.Музыка')+': '+_('Мне нравится'), category=RB.DisplayPageGroupType.TRANSIENT)
-            shell.append_display_page(page_group, None)
-            playlists = self.client.users_likes_playlists()
-            iterator = 0
-            for result in playlists:
-                if result.type != 'playlist': continue
-                entry_type = YandexMusicEntry(db, self.client, 'likepl'+str(iterator)+'_'+str(result.playlist.uid)+':'+str(result.playlist.kind))
-                source = GObject.new(YandexMusicSource, shell=shell, name=result.playlist.title, entry_type=entry_type, plugin=self, icon=Gio.FileIcon.new(self.iconfile))
-                source.setup(db, self.client, 'likepl'+str(iterator)+'_'+str(result.playlist.uid)+':'+str(result.playlist.kind))
-                shell.register_entry_type_for_source(source, entry_type)
-                shell.append_display_page(source, page_group)
-                iterator += 1
+        if self.client is None: return False
+        page_group = RB.DisplayPageGroup(shell=self.shell, id='yandex-music-likes-playlists', name=_('Яндекс.Музыка')+': '+_('Мне нравится'), category=RB.DisplayPageGroupType.TRANSIENT)
+        self.shell.append_display_page(page_group, None)
+        playlists = self.client.users_likes_playlists()
+        iterator = 0
+        for result in playlists:
+            if result.type != 'playlist': continue
+            entry_type = YandexMusicEntry(self.db, self.client, 'likepl'+str(iterator)+'_'+str(result.playlist.uid)+':'+str(result.playlist.kind))
+            source = GObject.new(YandexMusicSource, shell=self.shell, name=result.playlist.title, entry_type=entry_type, plugin=self, icon=self.icon)
+            source.setup(self.db, self.client, 'likepl'+str(iterator)+'_'+str(result.playlist.uid)+':'+str(result.playlist.kind))
+            self.shell.register_entry_type_for_source(source, entry_type)
+            self.shell.append_display_page(source, page_group)
+            iterator += 1
         return False
 
     def load_dashboard(self):
-        shell = self.object
-        db = shell.props.db
-        if self.client:
-            page_group = RB.DisplayPageGroup(shell=shell, id='yandex-music-dashboard', name=_('Яндекс.Музыка')+': '+_('Потоки'), category=RB.DisplayPageGroupType.TRANSIENT)
-            shell.append_display_page(page_group, None)
-            dashboard = self.client.rotor_stations_dashboard()
-            iterator = 0
-            for result in dashboard.stations:
-                entry_type = YandexMusicEntry(db, self.client, 'feed'+str(iterator)+'_'+result.station.id.type+':'+result.station.id.tag)
-                source = GObject.new(YandexMusicSource, shell=shell, name=result.station.name, entry_type=entry_type, plugin=self, icon=Gio.FileIcon.new(self.iconfile))
-                source.setup(db, self.client, 'feed'+str(iterator)+'_'+result.station.id.type+':'+result.station.id.tag)
-                shell.register_entry_type_for_source(source, entry_type)
-                shell.append_display_page(source, page_group)
-                iterator += 1
+        if self.client is None: return False
+        page_group = RB.DisplayPageGroup(shell=self.shell, id='yandex-music-dashboard', name=_('Яндекс.Музыка')+': '+_('Потоки'), category=RB.DisplayPageGroupType.TRANSIENT)
+        self.shell.append_display_page(page_group, None)
+        dashboard = self.client.rotor_stations_dashboard()
+        iterator = 0
+        for result in dashboard.stations:
+            entry_type = YandexMusicEntry(self.db, self.client, 'feed'+str(iterator)+'_'+result.station.id.type+':'+result.station.id.tag)
+            source = GObject.new(YandexMusicSource, shell=self.shell, name=result.station.name, entry_type=entry_type, plugin=self, icon=self.icon)
+            source.setup(self.db, self.client, 'feed'+str(iterator)+'_'+result.station.id.type+':'+result.station.id.tag)
+            self.shell.register_entry_type_for_source(source, entry_type)
+            self.shell.append_display_page(source, page_group)
+            iterator += 1
         return False
 
     def login_yandex(self):
