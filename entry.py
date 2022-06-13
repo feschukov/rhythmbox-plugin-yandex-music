@@ -3,7 +3,7 @@ import requests
 
 class YandexMusicEntry(RB.RhythmDBEntryType):
     def __init__(self, db, client, station):
-        RB.RhythmDBEntryType.__init__(self, name='ym-feed-entry', save_to_disk=False)
+        RB.RhythmDBEntryType.__init__(self, name='ym-'+station[:station.find('_')]+'-entry', save_to_disk=False)
         self.db = db
         self.client = client
         self.station = station[station.find('_')+1:]
