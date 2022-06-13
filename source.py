@@ -1,12 +1,14 @@
-from gi.repository import RB, GLib, Gdk
+from gi.repository import RB, Gio, GLib, Gdk
 
 class YandexMusicSource(RB.BrowserSource):
     def __init__(self):
         RB.BrowserSource.__init__(self)
+        self.app = Gio.Application.get_default()
 
-    def setup(self, db, client, station):
+    def setup(self, shell, client, station):
         self.initialised = False
-        self.db = db
+        self.shell = shell
+        self.db = shell.props.db
         self.entry_type = self.props.entry_type
         self.client = client
         self.station = station[station.find('_')+1:]
@@ -21,6 +23,10 @@ class YandexMusicSource(RB.BrowserSource):
         if not self.initialised or self.is_feed:
             self.initialised = True
             Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entries)
+        self.add_context_menu()
+
+    def do_deselected(self):
+        self.remove_context_menu()
 
     def add_entries(self):
         if self.station_prefix == 'likes_':
@@ -71,3 +77,49 @@ class YandexMusicSource(RB.BrowserSource):
             return False
         else:
             return True
+
+    def add_context_menu(self):
+        if self.station_prefix == 'likes_':
+            action = Gio.SimpleAction(name='ym-'+self.station_prefix+'unlikes')
+            action.connect('activate', self.unlike_tracks)
+            self.app.add_action(action)
+            item = Gio.MenuItem()
+            item.set_label(_('Не нравится'))
+            item.set_detailed_action('app.ym-'+self.station_prefix+'unlikes')
+            self.app.add_plugin_menu_item('browser-popup', 'ym-'+self.station_prefix+'unlikes', item)
+        else:
+            action = Gio.SimpleAction(name='ym-'+self.station_prefix+'likes')
+            action.connect('activate', self.like_tracks)
+            self.app.add_action(action)
+            item = Gio.MenuItem()
+            item.set_label(_('Мне нравится'))
+            item.set_detailed_action('app.ym-'+self.station_prefix+'likes')
+            self.app.add_plugin_menu_item('browser-popup', 'ym-'+self.station_prefix+'likes', item)
+
+    def remove_context_menu(self):
+        self.app.remove_plugin_menu_item('browser-popup', 'ym-'+self.station_prefix+'likes')
+        self.app.remove_plugin_menu_item('browser-popup', 'ym-'+self.station_prefix+'unlikes')
+
+    def like_tracks(self, *args):
+        page = self.shell.props.selected_page
+        selected = page.get_entry_view().get_selected_entries()
+        if selected:
+            tracks = []
+            for entry in selected:
+                location = entry.get_string(RB.RhythmDBPropType.LOCATION)
+                location = location[location.find('_')+1:]
+                tracks.append(location)
+            return self.client.users_likes_tracks_add(track_ids=tracks)
+        return False
+
+    def unlike_tracks(self, *args):
+        page = self.shell.props.selected_page
+        selected = page.get_entry_view().get_selected_entries()
+        if selected:
+            tracks = []
+            for entry in selected:
+                location = entry.get_string(RB.RhythmDBPropType.LOCATION)
+                location = location[location.find('_')+1:]
+                tracks.append(location)
+            return self.client.users_likes_tracks_remove(track_ids=tracks)
+        return False
