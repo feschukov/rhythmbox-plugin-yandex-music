@@ -123,24 +123,30 @@ class YandexMusicSource(RB.BrowserSource):
     def unlike_tracks(self, *args):
         page = self.shell.props.selected_page
         selected = page.get_entry_view().get_selected_entries()
-        if selected:
-            tracks = []
+        if not selected: return False
+        tracks = []
+        for entry in selected:
+            location = entry.get_string(RB.RhythmDBPropType.LOCATION)
+            location = location[location.find('_')+1:]
+            tracks.append(location)
+        if self.client.users_likes_tracks_remove(track_ids=tracks):
             for entry in selected:
-                location = entry.get_string(RB.RhythmDBPropType.LOCATION)
-                location = location[location.find('_')+1:]
-                tracks.append(location)
-            return self.client.users_likes_tracks_remove(track_ids=tracks)
+                self.db.entry_delete(entry)
+            return self.db.commit()
         return False
 
     def dislike_tracks(self, *args):
         page = self.shell.props.selected_page
         selected = page.get_entry_view().get_selected_entries()
-        if selected:
-            tracks = []
+        if not selected: return False
+        tracks = []
+        for entry in selected:
+            location = entry.get_string(RB.RhythmDBPropType.LOCATION)
+            location = location[location.find('_')+1:]
+            tracks.append(location)
+        if self.client.users_dislikes_tracks_add(track_ids=tracks):
             for entry in selected:
-                location = entry.get_string(RB.RhythmDBPropType.LOCATION)
-                location = location[location.find('_')+1:]
-                tracks.append(location)
-            if self.client.users_dislikes_tracks_add(track_ids=tracks):
-                return self.shell.props.shell_player.do_next()
+                self.db.entry_delete(entry)
+            self.db.commit()
+            return self.shell.props.shell_player.do_next()
         return False
