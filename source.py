@@ -95,10 +95,18 @@ class YandexMusicSource(RB.BrowserSource):
             item.set_label(_('Мне нравится'))
             item.set_detailed_action('app.ym-'+self.station_prefix+'likes')
             self.app.add_plugin_menu_item('browser-popup', 'ym-'+self.station_prefix+'likes', item)
+        action = Gio.SimpleAction(name='ym-'+self.station_prefix+'dislikes')
+        action.connect('activate', self.dislike_tracks)
+        self.app.add_action(action)
+        item = Gio.MenuItem()
+        item.set_label(_('Не рекомендовать'))
+        item.set_detailed_action('app.ym-'+self.station_prefix+'dislikes')
+        self.app.add_plugin_menu_item('browser-popup', 'ym-'+self.station_prefix+'dislikes', item)
 
     def remove_context_menu(self):
         self.app.remove_plugin_menu_item('browser-popup', 'ym-'+self.station_prefix+'likes')
         self.app.remove_plugin_menu_item('browser-popup', 'ym-'+self.station_prefix+'unlikes')
+        self.app.remove_plugin_menu_item('browser-popup', 'ym-'+self.station_prefix+'dislikes')
 
     def like_tracks(self, *args):
         page = self.shell.props.selected_page
@@ -122,4 +130,16 @@ class YandexMusicSource(RB.BrowserSource):
                 location = location[location.find('_')+1:]
                 tracks.append(location)
             return self.client.users_likes_tracks_remove(track_ids=tracks)
+        return False
+
+    def dislike_tracks(self, *args):
+        page = self.shell.props.selected_page
+        selected = page.get_entry_view().get_selected_entries()
+        if selected:
+            tracks = []
+            for entry in selected:
+                location = entry.get_string(RB.RhythmDBPropType.LOCATION)
+                location = location[location.find('_')+1:]
+                tracks.append(location)
+            return self.client.users_dislikes_tracks_add(track_ids=tracks)
         return False
