@@ -15,6 +15,7 @@ class YandexMusicSource(RB.BrowserSource):
         self.station_prefix = station[:station.find('_')+1]
         self.is_feed = (station.find('feed') == 0)
         self.last_track = None
+        self.last_state = None
 
     def load_tracks(self):
         return self.client.rotor_station_tracks(station=self.station, queue=self.last_track).sequence
@@ -23,9 +24,14 @@ class YandexMusicSource(RB.BrowserSource):
         if not self.initialised or self.is_feed:
             self.initialised = True
             Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entries)
+        if self.is_feed:
+            self.last_state = self.shell.props.shell_player.get_playback_state()
+            self.shell.props.shell_player.set_playback_state(shuffle=False, repeat=False)
         self.add_context_menu()
 
     def do_deselected(self):
+        if self.is_feed:
+            self.shell.props.shell_player.set_playback_state(shuffle=self.last_state.shuffle, repeat=self.last_state.repeat)
         self.remove_context_menu()
 
     def add_entries(self):
