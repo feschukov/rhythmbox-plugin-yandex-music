@@ -17,6 +17,8 @@ class YandexMusicSource(RB.BrowserSource):
         self.is_feed = (station.find('feed') == 0)
         self.last_track = None
         self.last_state = None
+        if self.is_feed:
+            self.player.connect('playing_uri_changed', self.update_feed)
 
     def load_tracks(self):
         return self.client.rotor_station_tracks(station=self.station, queue=self.last_track).sequence
@@ -85,10 +87,9 @@ class YandexMusicSource(RB.BrowserSource):
         else:
             return True
 
-    def do_handle_eos(self):
-        if self.is_feed:
-            Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entries)
-        return 3 #super().do_handle_eos()
+    def update_feed(self, player, uri):
+        if uri[:uri.find('_')+1] != self.station_prefix: return
+        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entries)
 
     def add_context_menu(self):
         if self.station_prefix == 'likes_':
