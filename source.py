@@ -9,6 +9,7 @@ class YandexMusicSource(RB.BrowserSource):
         self.initialised = False
         self.shell = shell
         self.db = shell.props.db
+        self.player = shell.props.shell_player
         self.entry_type = self.props.entry_type
         self.client = client
         self.station = station[station.find('_')+1:]
@@ -25,13 +26,13 @@ class YandexMusicSource(RB.BrowserSource):
             self.initialised = True
             Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entries)
         if self.is_feed:
-            self.last_state = self.shell.props.shell_player.get_playback_state()
-            self.shell.props.shell_player.set_playback_state(shuffle=False, repeat=False)
+            self.last_state = self.player.get_playback_state()
+            self.player.set_playback_state(shuffle=False, repeat=False)
         self.add_context_menu()
 
     def do_deselected(self):
         if self.is_feed:
-            self.shell.props.shell_player.set_playback_state(shuffle=self.last_state.shuffle, repeat=self.last_state.repeat)
+            self.player.set_playback_state(shuffle=self.last_state.shuffle, repeat=self.last_state.repeat)
         self.remove_context_menu()
 
     def add_entries(self):
@@ -83,6 +84,11 @@ class YandexMusicSource(RB.BrowserSource):
             return False
         else:
             return True
+
+    def do_handle_eos(self):
+        if self.is_feed:
+            Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entries)
+        return 3 #super().do_handle_eos()
 
     def add_context_menu(self):
         if self.station_prefix == 'likes_':
