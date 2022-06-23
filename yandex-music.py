@@ -42,7 +42,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         self.settings = None
 
     def load_users_playlists(self):
-        if self.client is None: return False
+        if not self.client: return False
         playlists = self.client.users_playlists_list()
         iterator = 0
         for result in playlists:
@@ -55,7 +55,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         return False
 
     def load_users_likes_playlists(self):
-        if self.client is None: return False
+        if not self.client: return False
         page_group = RB.DisplayPageGroup(shell=self.shell, id='yandex-music-likes-playlists', name=_('Яндекс.Музыка')+': '+_('Мне нравится'), category=RB.DisplayPageGroupType.TRANSIENT)
         self.shell.append_display_page(page_group, None)
         playlists = self.client.users_likes_playlists()
@@ -71,7 +71,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         return False
 
     def load_dashboard(self):
-        if self.client is None: return False
+        if not self.client: return False
         page_group = RB.DisplayPageGroup(shell=self.shell, id='yandex-music-dashboard', name=_('Яндекс.Музыка')+': '+_('Потоки'), category=RB.DisplayPageGroupType.TRANSIENT)
         self.shell.append_display_page(page_group, None)
         dashboard = self.client.rotor_stations_dashboard()

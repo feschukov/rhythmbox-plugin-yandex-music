@@ -1,4 +1,5 @@
 from gi.repository import RB, Gio, GLib, Gdk
+from entry import YandexMusicEntry
 
 class YandexMusicSource(RB.BrowserSource):
     def __init__(self):
@@ -65,9 +66,9 @@ class YandexMusicSource(RB.BrowserSource):
             if len(track.albums) > 0:
                 track_location = track_location+':'+str(track.albums[0].id)
             entry = self.db.entry_lookup_by_location(track_location)
-            if entry is None:
+            if not entry:
                 entry = RB.RhythmDBEntry.new(self.db, self.entry_type, track_location)
-                if entry is not None:
+                if entry:
                     self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, track.title)
                     self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, track.duration_ms/1000)
                     artists = ''
@@ -88,7 +89,7 @@ class YandexMusicSource(RB.BrowserSource):
             return True
 
     def update_feed(self, player, uri):
-        if uri[:uri.find('_')+1] != self.station_prefix: return
+        if not uri or uri[:uri.find('_')+1] != self.station_prefix: return
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entries)
 
     def add_context_menu(self):
@@ -124,14 +125,13 @@ class YandexMusicSource(RB.BrowserSource):
     def like_tracks(self, *args):
         page = self.shell.props.selected_page
         selected = page.get_entry_view().get_selected_entries()
-        if selected:
-            tracks = []
-            for entry in selected:
-                location = entry.get_string(RB.RhythmDBPropType.LOCATION)
-                location = location[location.find('_')+1:]
-                tracks.append(location)
-            return self.client.users_likes_tracks_add(track_ids=tracks)
-        return False
+        if not selected: return False
+        tracks = []
+        for entry in selected:
+            location = entry.get_string(RB.RhythmDBPropType.LOCATION)
+            location = location[location.find('_')+1:]
+            tracks.append(location)
+        return self.client.users_likes_tracks_add(track_ids=tracks)
 
     def unlike_tracks(self, *args):
         page = self.shell.props.selected_page

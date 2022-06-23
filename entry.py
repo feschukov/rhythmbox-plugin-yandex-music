@@ -14,7 +14,7 @@ class YandexMusicEntry(RB.RhythmDBEntryType):
 
     def do_get_playback_uri(self, entry):
         new_track = entry.get_string(RB.RhythmDBPropType.LOCATION)[len(self.station_prefix):]
-        if self.is_feed and (self.last_track is not None) and (self.last_track != new_track):
+        if self.is_feed and self.last_track and self.last_track != new_track:
             self.client.rotor_station_feedback_track_finished(station=self.station, track_id=self.last_track, total_played_seconds=self.last_duration)
         uri = entry.get_string(RB.RhythmDBPropType.MOUNTPOINT)
         need_request = uri is None
@@ -26,7 +26,7 @@ class YandexMusicEntry(RB.RhythmDBEntryType):
             uri = downinfo[1].direct_link
             self.db.entry_set(entry, RB.RhythmDBPropType.MOUNTPOINT, uri)
             self.db.commit()
-        if self.is_feed and (self.last_track != new_track):
+        if self.is_feed and self.last_track != new_track:
             self.client.rotor_station_feedback_track_started(station=self.station, track_id=new_track)
         self.last_track = new_track
         self.last_duration = entry.get_ulong(RB.RhythmDBPropType.DURATION)*1000
