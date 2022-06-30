@@ -1,4 +1,4 @@
-from gi.repository import RB, Gio, GLib, Gdk
+from gi.repository import RB, Gio, GLib, Gdk, Gtk
 from entry import YandexMusicEntry
 
 class YandexMusicSource(RB.BrowserSource):
@@ -117,10 +117,21 @@ class YandexMusicSource(RB.BrowserSource):
         item.set_detailed_action('app.ym-'+self.station_prefix+'dislikes')
         self.app.add_plugin_menu_item('browser-popup', 'ym-'+self.station_prefix+'dislikes', item)
 
+        # Copy track link action
+        action_name = 'ym-'+self.station_prefix+'copy_track_link'
+        action = Gio.SimpleAction(name=action_name)
+        action.connect('activate', self.copy_track_link)
+        self.app.add_action(action)
+        item = Gio.MenuItem()
+        item.set_label(_('Copy link'))
+        item.set_detailed_action('app.'+action_name)
+        self.app.add_plugin_menu_item('browser-popup', action_name, item)
+
     def remove_context_menu(self):
         self.app.remove_plugin_menu_item('browser-popup', 'ym-'+self.station_prefix+'likes')
         self.app.remove_plugin_menu_item('browser-popup', 'ym-'+self.station_prefix+'unlikes')
         self.app.remove_plugin_menu_item('browser-popup', 'ym-'+self.station_prefix+'dislikes')
+        self.app.remove_plugin_menu_item('browser-popup', 'ym-'+self.station_prefix+'copy_track_link')
 
     def like_tracks(self, *args):
         page = self.shell.props.selected_page
@@ -163,3 +174,14 @@ class YandexMusicSource(RB.BrowserSource):
             self.db.commit()
             return self.shell.props.shell_player.do_next()
         return False
+
+    def copy_track_link(self, *args):
+        """Copy a link to the track page on Yandex.Music."""
+        page = self.shell.props.selected_page
+        selected = page.get_entry_view().get_selected_entries()
+        if len(selected) != 1:
+            return False
+        location = selected[0].get_string(RB.RhythmDBPropType.LOCATION)
+        track_id, album_id = location[location.find('_')+1:].split(':')
+        clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+        clipboard.set_text(f'https://music.yandex.ru/album/{album_id}/track/{track_id}', -1)
