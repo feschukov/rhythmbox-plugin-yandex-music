@@ -1,0 +1,6 @@
+# Virtualenv
+.venv
+
+# IDEs
+.vscode
+.idea

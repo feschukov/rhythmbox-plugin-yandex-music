@@ -38,3 +38,7 @@ msgstr "Логин"
 msgid "Password"
 msgstr "Пароль"
 
+#: source.py:125
+msgid "Copy link"
+msgstr "Скопировать ссылку"
+
