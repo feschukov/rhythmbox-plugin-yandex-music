@@ -80,6 +80,7 @@ class YandexMusicSource(RB.BrowserSource):
                     self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, artists)
                     if len(track.albums) > 0:
                         self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, track.albums[0].title)
+                        self.db.entry_set(entry, RB.RhythmDBPropType.GENRE, track.albums[0].genre)
                     self.db.commit()
         self.iterator += 1
         if self.iterator >= self.listcount:
