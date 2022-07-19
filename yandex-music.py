@@ -125,4 +125,4 @@ class YandexMusic(GObject.Object, Peas.Activatable):
                 print(request_auth.json())
         except requests.exceptions.ConnectionError:
             print('Не удалось отправить запрос на получение токена')
-        return '';
+        return ''
