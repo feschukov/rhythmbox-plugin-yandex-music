@@ -78,7 +78,7 @@ class YandexMusicSource(RB.BrowserSource):
                     self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, artists)
                     if len(track.albums) > 0:
                         self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, track.albums[0].title)
-                        self.db.entry_set(entry, RB.RhythmDBPropType.GENRE, track.albums[0].genre)
+                        self.db.entry_set(entry, RB.RhythmDBPropType.GENRE, str(track.albums[0].genre))
                     self.db.commit()
                     self.album_arts.ensure_art_exists(track)
         self.iterator += 1
