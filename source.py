@@ -1,5 +1,7 @@
 from gi.repository import RB, Gio, GLib, Gdk, Gtk
-from entry import YandexMusicEntry
+
+from album_arts import AlbumArtManager
+
 
 class YandexMusicSource(RB.BrowserSource):
     def __init__(self):
@@ -13,6 +15,7 @@ class YandexMusicSource(RB.BrowserSource):
         self.player = shell.props.shell_player
         self.entry_type = self.props.entry_type
         self.client = client
+        self.album_arts = AlbumArtManager()
         self.station = station[station.find('_')+1:]
         self.station_prefix = station[:station.find('_')+1]
         self.is_feed = (station.find('feed') == 0)
@@ -44,7 +47,7 @@ class YandexMusicSource(RB.BrowserSource):
         elif self.station_prefix.find('mepl') == 0:
             tracks = self.client.users_playlists(kind=self.station).fetch_tracks()
         elif self.station_prefix.find('likepl') == 0:
-            user_id  = self.station[:self.station.find(':')]
+            user_id = self.station[:self.station.find(':')]
             album_id = self.station[self.station.find(':')+1:]
             tracks = self.client.users_playlists(kind=album_id, user_id=user_id).fetch_tracks()
         elif self.station_prefix.find('feed') == 0:
@@ -71,17 +74,13 @@ class YandexMusicSource(RB.BrowserSource):
                 if entry:
                     self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, track.title)
                     self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, track.duration_ms/1000)
-                    artists = ''
-                    for artist in track.artists:
-                        if len(artists) > 1:
-                            artists += ', '+artist.name
-                        else:
-                            artists = artist.name
+                    artists = ', '.join(artist.name for artist in track.artists)
                     self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, artists)
                     if len(track.albums) > 0:
                         self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, track.albums[0].title)
                         self.db.entry_set(entry, RB.RhythmDBPropType.GENRE, track.albums[0].genre)
                     self.db.commit()
+                    self.album_arts.ensure_art_exists(track)
         self.iterator += 1
         if self.iterator >= self.listcount:
             self.last_track = str(track.id)+':'+str(track.albums[0].id)
