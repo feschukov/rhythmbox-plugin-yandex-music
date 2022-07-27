@@ -123,7 +123,7 @@ class YandexMusicSource(RB.BrowserSource):
         action.connect('activate', self.copy_track_link)
         self.app.add_action(action)
         item = Gio.MenuItem()
-        item.set_label(_('Copy link'))
+        item.set_label(_('Копировать ссылку'))
         item.set_detailed_action('app.'+action_name)
         self.app.add_plugin_menu_item('browser-popup', action_name, item)
 
