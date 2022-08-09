@@ -24,7 +24,7 @@ class AlbumArtManager(object):
         album_title = track.albums[0].title if track.albums else NO_ALBUM
         lookup_key = self._gen_lookup_key(album_title, artists)
         lookup_result = self.storage.lookup(lookup_key)[0]
-        if not lookup_result:
+        if track.cover_uri and not lookup_result:
             uri = f'https://{track.cover_uri.replace("%%", size)}'
             storage_key = self._gen_storage_key(album_title, artists)
             self.storage.store_uri(storage_key, RB.ExtDBSourceType.SEARCH, uri)
