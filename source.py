@@ -89,7 +89,7 @@ class YandexMusicSource(RB.BrowserSource):
             return True
 
     def update_feed(self, player, uri):
-        if not uri or uri[:uri.find('_')+1] != self.station_prefix: return
+        if not uri or uri[:uri.find('_')+1] != self.station_prefix or uri[uri.find('_')+1:] != self.last_track: return
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.add_entries)
 
     def add_context_menu(self):
