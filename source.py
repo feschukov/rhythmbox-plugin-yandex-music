@@ -24,9 +24,6 @@ class YandexMusicSource(RB.BrowserSource):
         if self.is_feed:
             self.player.connect('playing_uri_changed', self.update_feed)
 
-    def load_tracks(self):
-        return self.client.rotor_station_tracks(station=self.station, queue=self.last_track).sequence
-
     def do_selected(self):
         if not self.initialised or self.is_feed:
             self.initialised = True
