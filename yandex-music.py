@@ -23,7 +23,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         if self.login_yandex():
             self.page_group = RB.DisplayPageGroup(shell=self.shell, id='yandex-music-playlist', name=_('Яндекс.Музыка'), category=RB.DisplayPageGroupType.TRANSIENT)
             self.shell.append_display_page(self.page_group, None)
-            entry_type = YandexMusicEntry(self.db, self.client, 'likes_')
+            entry_type = YandexMusicEntry(self.shell, self.client, 'likes_')
             self.db.register_entry_type(entry_type)
             source = GObject.new(YandexMusicSource, shell=self.shell, name=_('Мне нравится'), entry_type=entry_type, plugin=self, icon=self.icon)
             source.setup(self.shell, self.client, 'likes_')
@@ -46,7 +46,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         playlists = self.client.users_playlists_list()
         iterator = 0
         for result in playlists:
-            entry_type = YandexMusicEntry(self.db, self.client, 'mepl'+str(iterator)+'_'+str(result.kind))
+            entry_type = YandexMusicEntry(self.shell, self.client, 'mepl'+str(iterator)+'_'+str(result.kind))
             source = GObject.new(YandexMusicSource, shell=self.shell, name=result.title, entry_type=entry_type, plugin=self, icon=self.icon)
             source.setup(self.shell, self.client, 'mepl'+str(iterator)+'_'+str(result.kind))
             self.shell.register_entry_type_for_source(source, entry_type)
@@ -62,7 +62,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         iterator = 0
         for result in playlists:
             if result.type != 'playlist': continue
-            entry_type = YandexMusicEntry(self.db, self.client, 'likepl'+str(iterator)+'_'+str(result.playlist.uid)+':'+str(result.playlist.kind))
+            entry_type = YandexMusicEntry(self.shell, self.client, 'likepl'+str(iterator)+'_'+str(result.playlist.uid)+':'+str(result.playlist.kind))
             source = GObject.new(YandexMusicSource, shell=self.shell, name=result.playlist.title, entry_type=entry_type, plugin=self, icon=self.icon)
             source.setup(self.shell, self.client, 'likepl'+str(iterator)+'_'+str(result.playlist.uid)+':'+str(result.playlist.kind))
             self.shell.register_entry_type_for_source(source, entry_type)
@@ -77,7 +77,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         dashboard = self.client.rotor_stations_dashboard()
         iterator = 0
         for result in dashboard.stations:
-            entry_type = YandexMusicEntry(self.db, self.client, 'feed'+str(iterator)+'_'+result.station.id.type+':'+result.station.id.tag)
+            entry_type = YandexMusicEntry(self.shell, self.client, 'feed'+str(iterator)+'_'+result.station.id.type+':'+result.station.id.tag)
             source = GObject.new(YandexMusicSource, shell=self.shell, name=result.station.name, entry_type=entry_type, plugin=self, icon=self.icon)
             source.setup(self.shell, self.client, 'feed'+str(iterator)+'_'+result.station.id.type+':'+result.station.id.tag)
             self.shell.register_entry_type_for_source(source, entry_type)

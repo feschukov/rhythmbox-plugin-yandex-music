@@ -2,9 +2,10 @@ from gi.repository import RB
 import requests
 
 class YandexMusicEntry(RB.RhythmDBEntryType):
-    def __init__(self, db, client, station):
+    def __init__(self, shell, client, station):
         RB.RhythmDBEntryType.__init__(self, name='ym-'+station[:station.find('_')]+'-entry', save_to_disk=False)
-        self.db = db
+        self.shell = shell
+        self.db = shell.props.db
         self.client = client
         self.station = station[station.find('_')+1:]
         self.station_prefix = station[:station.find('_')+1]
