@@ -124,11 +124,30 @@ class YandexMusicSource(RB.BrowserSource):
         item.set_detailed_action('app.'+action_name)
         self.app.add_plugin_menu_item('browser-popup', action_name, item)
 
+        # Add track to playlist
+        main_item = Gio.MenuItem()
+        main_item.set_label(_('Добавить в плейлист'))
+        playlists = self.client.users_playlists_list()
+        submenu = Gio.Menu()
+        for p in playlists:
+            # create action
+            action_name = 'ym-'+self.station_prefix+'add-to-playlist_'+str(p.kind)
+            action = Gio.SimpleAction(name=action_name)
+            action.connect("activate", self.add_track_to_playlist, p)
+            self.app.add_action(action)
+            item = Gio.MenuItem()
+            item.set_label(p.title)
+            item.set_detailed_action('app.'+action_name)
+            submenu.append_item(item)
+        main_item.set_submenu(submenu)
+        self.app.add_plugin_menu_item('browser-popup', 'ym-'+self.station_prefix+'add_to_playlist', main_item)
+
     def remove_context_menu(self):
         self.app.remove_plugin_menu_item('browser-popup', 'ym-'+self.station_prefix+'likes')
         self.app.remove_plugin_menu_item('browser-popup', 'ym-'+self.station_prefix+'unlikes')
         self.app.remove_plugin_menu_item('browser-popup', 'ym-'+self.station_prefix+'dislikes')
         self.app.remove_plugin_menu_item('browser-popup', 'ym-'+self.station_prefix+'copy_track_link')
+        self.app.remove_plugin_menu_item('browser-popup', 'ym-'+self.station_prefix+'add_to_playlist')
 
     def like_tracks(self, *args):
         page = self.shell.props.selected_page
@@ -182,3 +201,15 @@ class YandexMusicSource(RB.BrowserSource):
         track_id, album_id = location[location.find('_')+1:].split(':')
         clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
         clipboard.set_text(f'https://music.yandex.ru/album/{album_id}/track/{track_id}', -1)
+
+    def add_track_to_playlist(self, *args):
+        page = self.shell.props.selected_page
+        selected = page.get_entry_view().get_selected_entries()
+        if not selected:
+            return False
+        playlist = args[-1]
+        for entry in selected:
+            location = entry.get_string(RB.RhythmDBPropType.LOCATION)
+            track_id, album_id = location[location.find('_')+1:].split(':')
+            playlist = playlist.insert_track(track_id=track_id, album_id=album_id)
+        return False
