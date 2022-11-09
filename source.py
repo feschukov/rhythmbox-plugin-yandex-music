@@ -8,13 +8,14 @@ class YandexMusicSource(RB.BrowserSource):
         RB.BrowserSource.__init__(self)
         self.app = Gio.Application.get_default()
 
-    def setup(self, shell, client, station):
+    def setup(self, shell, client, station, playlists = None):
         self.initialised = False
         self.shell = shell
         self.db = shell.props.db
         self.player = shell.props.shell_player
         self.entry_type = self.props.entry_type
         self.client = client
+        self.playlists = playlists
         self.album_arts = AlbumArtManager()
         self.station = station[station.find('_')+1:]
         self.station_prefix = station[:station.find('_')+1]
@@ -127,9 +128,8 @@ class YandexMusicSource(RB.BrowserSource):
         # Add track to playlist
         main_item = Gio.MenuItem()
         main_item.set_label(_('Добавить в плейлист'))
-        playlists = self.client.users_playlists_list()
         submenu = Gio.Menu()
-        for p in playlists:
+        for p in self.playlists:
             # create action
             action_name = 'ym-'+self.station_prefix+'add-to-playlist_'+str(p.kind)
             action = Gio.SimpleAction(name=action_name)
@@ -195,8 +195,7 @@ class YandexMusicSource(RB.BrowserSource):
         """Copy a link to the track page on Yandex.Music."""
         page = self.shell.props.selected_page
         selected = page.get_entry_view().get_selected_entries()
-        if len(selected) != 1:
-            return False
+        if not selected: return False
         location = selected[0].get_string(RB.RhythmDBPropType.LOCATION)
         track_id, album_id = location[location.find('_')+1:].split(':')
         clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
@@ -205,8 +204,7 @@ class YandexMusicSource(RB.BrowserSource):
     def add_track_to_playlist(self, *args):
         page = self.shell.props.selected_page
         selected = page.get_entry_view().get_selected_entries()
-        if not selected:
-            return False
+        if not selected: return False
         playlist = args[-1]
         for entry in selected:
             location = entry.get_string(RB.RhythmDBPropType.LOCATION)
