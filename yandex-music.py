@@ -1,6 +1,6 @@
 from gi.repository import GObject, RB, Peas, Gio, GLib, Gdk, Gtk
 from yandex_music import Client
-from widget import AuthDialog
+from widget import AuthDialog, CaptchaDialog
 from source import YandexMusicSource
 from entry import YandexMusicEntry
 import requests
@@ -88,7 +88,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
     def login_yandex(self):
         token = self.settings.get_string('token')
         iterator = 0
-        while not token and iterator < 5:
+        while not token:
             window = AuthDialog(None)
             response = window.run()
             if (response == Gtk.ResponseType.OK):
@@ -101,7 +101,6 @@ class YandexMusic(GObject.Object, Peas.Activatable):
             elif (response == Gtk.ResponseType.CANCEL):
                 window.destroy()
                 return False
-            iterator += 1
         self.client = Client(token).init()
         return isinstance(self.client, Client)
 
@@ -113,16 +112,34 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         header = {
             'user-agent': user_agent
         }
-        try:
-            request_post = f"grant_type=password&client_id={client_id}&client_secret={client_secret}&username={login}&password={password}"
-            request_auth = requests.post(link_post, data=request_post, headers=header)
-            if request_auth.status_code == 200:
+        result = None;
+        while True:
+            try:
+                request_post = f"grant_type=password&client_id={client_id}&client_secret={client_secret}&username={login}&password={password}"
+                if result and captcha_key and captcha_answer:
+                    request_post += f"&x_captcha_key={captcha_key}&x_captcha_answer={captcha_answer}"
+                request_auth = requests.post(link_post, data=request_post, headers=header)
                 json_data = request_auth.json()
-                token = json_data.get('access_token')
-                return token
-            else:
-                print('Не удалось получить токен')
-                print(request_auth.json())
-        except requests.exceptions.ConnectionError:
-            print('Не удалось отправить запрос на получение токена')
+                if request_auth.status_code == 200:
+                    token = json_data.get('access_token')
+                    return token
+                elif (request_auth.status_code == 403) and (json_data.get('error_description').find('CAPTCHA') >= 0):
+                    window = CaptchaDialog(None, json_data.get('x_captcha_url'))
+                    response = window.run()
+                    if (response == Gtk.ResponseType.OK):
+                        result = window.get_result()
+                        window.destroy()
+                        if result['captcha_answer']:
+                            captcha_key = json_data.get('x_captcha_key')
+                            captcha_answer = result['captcha_answer']
+                    elif (response == Gtk.ResponseType.CANCEL):
+                        window.destroy()
+                        return ''
+                else:
+                    print('Не удалось получить токен')
+                    print(request_auth.json())
+                    return ''
+            except requests.exceptions.ConnectionError:
+                print('Не удалось отправить запрос на получение токена')
+                return ''
         return ''
