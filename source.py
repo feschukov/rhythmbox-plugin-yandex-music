@@ -68,6 +68,7 @@ class YandexMusicSource(RB.BrowserSource):
                 track_location = track_location+':'+str(track.albums[0].id)
             entry = self.db.entry_lookup_by_location(track_location)
             if not entry:
+                self.last_track = str(track.id)+':'+str(track.albums[0].id)
                 entry = RB.RhythmDBEntry.new(self.db, self.entry_type, track_location)
                 if entry:
                     self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, track.title)
@@ -81,7 +82,6 @@ class YandexMusicSource(RB.BrowserSource):
                     self.album_arts.ensure_art_exists(track)
         self.iterator += 1
         if self.iterator >= self.listcount:
-            self.last_track = str(track.id)+':'+str(track.albums[0].id)
             return False
         else:
             return True
