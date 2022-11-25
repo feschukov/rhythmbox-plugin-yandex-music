@@ -4,10 +4,13 @@ from widget import AuthDialog, CaptchaDialog
 from source import YandexMusicSource
 from entry import YandexMusicEntry
 import requests
+import webbrowser
 
 class YandexMusic(GObject.Object, Peas.Activatable):
     object = GObject.property(type=GObject.Object)
     client = None
+    client_id = '23cabbbdc6cd418abb4b39c32c41195d'
+    client_secret = '53bc75238f0c4d08a118e51fe9203300'
 
     def __init__(self):
         super(YandexMusic, self).__init__()
@@ -87,35 +90,37 @@ class YandexMusic(GObject.Object, Peas.Activatable):
 
     def login_yandex(self):
         token = self.settings.get_string('token')
-        iterator = 0
         while not token:
+            info = Gtk.MessageDialog(None, 0, Gtk.MessageType.INFO, Gtk.ButtonsType.OK, _('Яндекс.Музыка'))
+            info.format_secondary_text("Сейчас откроется браузер.\nСкопируйте код (code=<код>) из адресной строки и введите в форму")
+            info.run()
+            info.destroy()
+            webbrowser.open(f"https://oauth.yandex.ru/authorize?response_type=code&client_id={self.client_id}")
             window = AuthDialog(None)
             response = window.run()
-            if (response == Gtk.ResponseType.OK):
+            if response == Gtk.ResponseType.OK:
                 result = window.get_result()
                 window.destroy()
-                if result['login'] and result['password']:
-                    token = self.generate_token(result['login'], result['password'])
+                if result['code']:
+                    token = self.generate_token(result['code'])
                     if token:
                         self.settings.set_string('token', token)
-            elif (response == Gtk.ResponseType.CANCEL):
+            elif response == Gtk.ResponseType.CANCEL:
                 window.destroy()
                 return False
         self.client = Client(token).init()
         return isinstance(self.client, Client)
 
-    def generate_token(self, login, password):
+    def generate_token(self, code):
         link_post = 'https://oauth.yandex.com/token'
         user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36'
-        client_id = '23cabbbdc6cd418abb4b39c32c41195d'
-        client_secret = '53bc75238f0c4d08a118e51fe9203300'
         header = {
             'user-agent': user_agent
         }
         result = None;
         while True:
             try:
-                request_post = f"grant_type=password&client_id={client_id}&client_secret={client_secret}&username={login}&password={password}"
+                request_post = f"grant_type=authorization_code&code={code}&client_id={self.client_id}&client_secret={self.client_secret}"
                 if result and captcha_key and captcha_answer:
                     request_post += f"&x_captcha_key={captcha_key}&x_captcha_answer={captcha_answer}"
                 request_auth = requests.post(link_post, data=request_post, headers=header)
@@ -126,13 +131,13 @@ class YandexMusic(GObject.Object, Peas.Activatable):
                 elif (request_auth.status_code == 403) and (json_data.get('error_description').find('CAPTCHA') >= 0):
                     window = CaptchaDialog(None, json_data.get('x_captcha_url'))
                     response = window.run()
-                    if (response == Gtk.ResponseType.OK):
+                    if response == Gtk.ResponseType.OK:
                         result = window.get_result()
                         window.destroy()
                         if result['captcha_answer']:
                             captcha_key = json_data.get('x_captcha_key')
                             captcha_answer = result['captcha_answer']
-                    elif (response == Gtk.ResponseType.CANCEL):
+                    elif response == Gtk.ResponseType.CANCEL:
                         window.destroy()
                         return ''
                 else:
