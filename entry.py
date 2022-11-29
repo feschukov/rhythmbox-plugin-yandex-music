@@ -1,4 +1,4 @@
-from gi.repository import RB
+from gi.repository import RB, GLib, Gdk
 import requests
 
 class YandexMusicEntry(RB.RhythmDBEntryType):
@@ -16,7 +16,7 @@ class YandexMusicEntry(RB.RhythmDBEntryType):
     def do_get_playback_uri(self, entry):
         new_track = entry.get_string(RB.RhythmDBPropType.LOCATION)[len(self.station_prefix):]
         if self.is_feed and self.last_track and self.last_track != new_track:
-            self.client.rotor_station_feedback_track_finished(station=self.station, track_id=self.last_track, total_played_seconds=self.last_duration)
+            Gdk.threads_add_idle(GLib.PRIORITY_LOW, self.feedback_track_finished, self.last_track, self.last_duration)
         uri = entry.get_string(RB.RhythmDBPropType.MOUNTPOINT)
         need_request = uri is None
         if not need_request:
@@ -28,7 +28,7 @@ class YandexMusicEntry(RB.RhythmDBEntryType):
             self.db.entry_set(entry, RB.RhythmDBPropType.MOUNTPOINT, uri)
             self.db.commit()
         if self.is_feed and self.last_track != new_track:
-            self.client.rotor_station_feedback_track_started(station=self.station, track_id=new_track)
+            Gdk.threads_add_idle(GLib.PRIORITY_LOW, self.feedback_track_started, new_track)
         self.last_track = new_track
         self.last_duration = entry.get_ulong(RB.RhythmDBPropType.DURATION)*1000
         return uri
@@ -38,3 +38,11 @@ class YandexMusicEntry(RB.RhythmDBEntryType):
 
     def do_sync_metadata(self, entry, changes):
         return
+
+    def feedback_track_started(self, track):
+        self.client.rotor_station_feedback_track_started(station=self.station, track_id=track)
+        return False
+
+    def feedback_track_finished(self, track, duration):
+        self.client.rotor_station_feedback_track_finished(station=self.station, track_id=track, total_played_seconds=duration)
+        return False
