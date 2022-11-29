@@ -23,6 +23,9 @@ class YandexMusic(GObject.Object, Peas.Activatable):
         schema_source = Gio.SettingsSchemaSource.new_from_directory(self.plugin_info.get_data_dir(), Gio.SettingsSchemaSource.get_default(), False)
         schema = schema_source.lookup('org.gnome.rhythmbox.plugins.yandex-music', False)
         self.settings = Gio.Settings.new_full(schema, None, None)
+        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.do_load)
+
+    def do_load(self):
         if self.login_yandex():
             self.playlists = self.client.users_playlists_list()
             self.page_group = RB.DisplayPageGroup(shell=self.shell, id='yandex-music-playlist', name=_('Яндекс.Музыка'), category=RB.DisplayPageGroupType.TRANSIENT)
@@ -36,6 +39,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
             Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.load_users_playlists)
             Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.load_users_likes_playlists)
             Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.load_dashboard)
+        return False
 
     def do_deactivate(self):
         print('Yandex.Music plugin deactivating')
