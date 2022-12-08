@@ -23,10 +23,14 @@ class YandexMusicEntry(RB.RhythmDBEntryType):
             r = requests.head(uri)
             need_request = (r.status_code != 200)
         if need_request:
-            downinfo = self.client.tracks_download_info(track_id=new_track, get_direct_links=True)
-            uri = downinfo[1].direct_link
-            self.db.entry_set(entry, RB.RhythmDBPropType.MOUNTPOINT, uri)
-            self.db.commit()
+            try:
+                downinfo = self.client.tracks_download_info(track_id=new_track, get_direct_links=True)
+            except:
+                return None
+            else:
+                uri = downinfo[1].direct_link
+                self.db.entry_set(entry, RB.RhythmDBPropType.MOUNTPOINT, uri)
+                self.db.commit()
         if self.is_feed and self.last_track != new_track:
             Gdk.threads_add_idle(GLib.PRIORITY_LOW, self.feedback_track_started, new_track)
         self.last_track = new_track
