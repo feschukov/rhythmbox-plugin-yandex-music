@@ -37,8 +37,6 @@ class YandexMusic(GObject.Object, Peas.Activatable):
             self.shell.register_entry_type_for_source(source, entry_type)
             self.shell.append_display_page(source, self.page_group)
             Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.load_users_playlists)
-            Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.load_users_likes_playlists)
-            Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.load_dashboard)
         return False
 
     def do_deactivate(self):
@@ -59,6 +57,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
             self.shell.register_entry_type_for_source(source, entry_type)
             self.shell.append_display_page(source, self.page_group)
             iterator += 1
+        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.load_users_likes_playlists)
         return False
 
     def load_users_likes_playlists(self):
@@ -75,6 +74,7 @@ class YandexMusic(GObject.Object, Peas.Activatable):
             self.shell.register_entry_type_for_source(source, entry_type)
             self.shell.append_display_page(source, page_group)
             iterator += 1
+        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.load_dashboard)
         return False
 
     def load_dashboard(self):
