@@ -6,6 +6,13 @@
 ### Arch Linux
 В случае использования репозитория AUR, вы можете установить пакет [rhythmbox-plugin-yandex-music](https://aur.archlinux.org/packages/rhythmbox-plugin-yandex-music) из AUR через ваш пакетный менеджер или терминал. В ином случае требуется действовать согласно инструкции для других дистрибутивов.
 
+### Fedora
+Перед установкой плагина необходимо установить дополнительные компоненты Python3
+
+    $ sudo dnf in python3-frozenlist python3-multidict python3-yarl
+
+После этого следуйте инструкции для других дистрибутивов.
+
 ### Другие дистрибутивы
 Для работы плагина требуется установить [неофициальную Python библиотеку API Yandex Music](https://github.com/MarshalX/yandex-music-api).
 
@@ -18,15 +25,15 @@
 ### Релизная версия
 Теперь необходимо скачать плагин из репозитория, распаковать его и переместить в папку с плагинами Rhythmbox.
 
-    $ wget https://github.com/dobroweb/rhythmbox-plugin-yandex-music/archive/refs/tags/0.4-alpha.tar.gz
-    $ tar -zxvf 0.4-alpha.tar.gz
+    $ wget https://github.com/dobroweb/rhythmbox-plugin-yandex-music/archive/refs/tags/0.5-alpha.tar.gz
+    $ tar -zxvf 0.5-alpha.tar.gz
     $ mkdir -p ~/.local/share/rhythmbox/plugins/
-    $ mv rhythmbox-plugin-yandex-music-0.4-alpha ~/.local/share/rhythmbox/plugins/yandex-music
+    $ mv rhythmbox-plugin-yandex-music-0.5-alpha ~/.local/share/rhythmbox/plugins/yandex-music
 
 ### Тестовая версия
 Вам достаточно клонировать репозиторий в папку с плагинами Rhythmbox.
 
-    $ git clone git@github.com:feschukov/rhythmbox-plugin-yandex-music.git ~/.local/share/rhythmbox/plugins/yandex-music
+    $ git clone https://github.com/feschukov/rhythmbox-plugin-yandex-music.git ~/.local/share/rhythmbox/plugins/yandex-music
 
 ## Обновление
 ### Arch Linux
@@ -41,9 +48,9 @@
 Теперь необходимо удалить старый плагин, скачать новый и переместить его в папку с плагинами Rhythmbox.
 
     $ rm -R ~/.local/share/rhythmbox/plugins/yandex-music
-    $ wget https://github.com/dobroweb/rhythmbox-plugin-yandex-music/archive/refs/tags/0.4-alpha.tar.gz
-    $ tar -zxvf 0.4-alpha.tar.gz
-    $ mv rhythmbox-plugin-yandex-music-0.4-alpha ~/.local/share/rhythmbox/plugins/yandex-music
+    $ wget https://github.com/dobroweb/rhythmbox-plugin-yandex-music/archive/refs/tags/0.5-alpha.tar.gz
+    $ tar -zxvf 0.5-alpha.tar.gz
+    $ mv rhythmbox-plugin-yandex-music-0.5-alpha ~/.local/share/rhythmbox/plugins/yandex-music
 
 ### Тестовая версия
 Вам достаточно обновить репозиторий в папке с установленным плагином.
